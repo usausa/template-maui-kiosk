@@ -18,6 +18,12 @@ public sealed partial class DeviceOwner
     private partial bool ResolveDeviceOwner() =>
         policyManager.IsDeviceOwnerApp(Application.Context.PackageName);
 
+    private partial void PlatformAllowLockTask(bool allow)
+    {
+        using var admin = CreateAdmin();
+        policyManager.SetLockTaskPackages(admin, allow ? [Application.Context.PackageName!] : []);
+    }
+
     private partial void PlatformSendConfiguration(ManagedSettings settings)
     {
         using var admin = CreateAdmin();

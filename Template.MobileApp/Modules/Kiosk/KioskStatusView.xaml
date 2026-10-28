@@ -82,6 +82,24 @@
                        Style="{StaticResource StatusValueLabel}"
                        Text="{Binding Kiosk.IsDeviceOwner, Converter={StaticResource YesNoConverter}}" />
             </Grid>
+            <Grid Style="{StaticResource StatusRowGrid}"
+                  ColumnDefinitions="*,Auto">
+                <Label Grid.Column="0"
+                       Style="{StaticResource NameLabel}"
+                       Text="Lock task" />
+                <Label Grid.Column="1"
+                       Style="{StaticResource StatusValueLabel}"
+                       Text="{Binding Kiosk.LockTaskState}" />
+            </Grid>
+            <Grid Style="{StaticResource StatusRowGrid}"
+                  ColumnDefinitions="*,Auto">
+                <Label Grid.Column="0"
+                       Style="{StaticResource NameLabel}"
+                       Text="Lock task permitted" />
+                <Label Grid.Column="1"
+                       Style="{StaticResource StatusValueLabel}"
+                       Text="{Binding Kiosk.IsLockTaskPermitted, Converter={StaticResource YesNoConverter}}" />
+            </Grid>
 
             <!-- Managed configuration -->
             <Label Style="{StaticResource StatusGroupLabel}"

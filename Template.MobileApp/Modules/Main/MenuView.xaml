@@ -11,21 +11,43 @@
              shell:ShellProperty.Title="Menu"
              shell:ShellProperty.FunctionVisible="False">
 
+    <ContentView.Resources>
+        <ResourceDictionary>
+
+            <Style x:Key="MessageLabel"
+                   TargetType="Label">
+                <Setter Property="Padding" Value="12" />
+                <Setter Property="FontSize" Value="20" />
+                <Setter Property="TextColor" Value="{StaticResource BlueDarken3}" />
+                <Setter Property="BackgroundColor" Value="{StaticResource BlueLighten5}" />
+            </Style>
+
+        </ResourceDictionary>
+    </ContentView.Resources>
+
     <!-- Content -->
-    <Grid Style="{StaticResource MenuGrid}"
-          RowDefinitions="*,*,*,*,*,*,*,*,*">
+    <Grid RowDefinitions="Auto,*">
 
-        <Button Grid.Row="0"
-                Style="{StaticResource MenuButton}"
-                Command="{Binding ForwardCommand}"
-                CommandParameter="{markup:ViewId KioskStatus}"
-                Text="Status" />
-        <Button Grid.Row="1"
-                Style="{StaticResource MenuButton}"
-                Command="{Binding ForwardCommand}"
-                CommandParameter="{markup:ViewId KioskAdmin}"
-                Text="Admin" />
+        <Label Grid.Row="0"
+               Style="{StaticResource MessageLabel}"
+               IsVisible="{Binding Kiosk.Message, Converter={StaticResource NotEmptyConverter}}"
+               Text="{Binding Kiosk.Message}" />
 
+        <Grid Grid.Row="1"
+              Style="{StaticResource MenuGrid}"
+              RowDefinitions="*,*,*,*,*,*,*,*,*">
+
+            <Button Grid.Row="0"
+                    Style="{StaticResource MenuButton}"
+                    Command="{Binding ForwardCommand}"
+                    CommandParameter="{markup:ViewId KioskStatus}"
+                    Text="Status" />
+            <Button Grid.Row="1"
+                    Style="{StaticResource MenuButton}"
+                    Command="{Binding AdminCommand}"
+                    Text="Admin" />
+
+        </Grid>
     </Grid>
 
 </ContentView>

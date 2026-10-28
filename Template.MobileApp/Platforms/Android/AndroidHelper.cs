@@ -3,6 +3,7 @@
 namespace Template.MobileApp;
 
 using Android.App;
+using Android.Content;
 
 public static class AndroidHelper
 {
@@ -11,4 +12,11 @@ public static class AndroidHelper
 
     public static void MoveTaskToBack() =>
         ActivityResolver.CurrentActivity.MoveTaskToBack(true);
+
+    public static void OpenSettings()
+    {
+        using var intent = new Intent(Android.Provider.Settings.ActionSettings);
+        intent.AddFlags(ActivityFlags.NewTask);
+        Application.Context.StartActivity(intent);
+    }
 }

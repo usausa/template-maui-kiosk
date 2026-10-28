@@ -10,6 +10,8 @@ public sealed partial class KioskAdminViewModel : AppViewModelBase
 
     private readonly DeviceOwner deviceOwner;
 
+    private readonly LockTask lockTask;
+
     // Property
 
     public KioskState Kiosk { get; }
@@ -28,6 +30,12 @@ public sealed partial class KioskAdminViewModel : AppViewModelBase
 
     // Command
 
+    public IObserveCommand StartCommand { get; }
+
+    public IObserveCommand StopCommand { get; }
+
+    public IObserveCommand OpenSettingsCommand { get; }
+
     public IObserveCommand SendCommand { get; }
 
     public IObserveCommand ClearCommand { get; }
@@ -39,10 +47,12 @@ public sealed partial class KioskAdminViewModel : AppViewModelBase
     public KioskAdminViewModel(
         IDialog dialog,
         DeviceOwner deviceOwner,
+        LockTask lockTask,
         KioskState kiosk)
     {
         this.dialog = dialog;
         this.deviceOwner = deviceOwner;
+        this.lockTask = lockTask;
         Kiosk = kiosk;
 
         AdminPin = kiosk.IsAdminPinConfigured ? kiosk.AdminPin : string.Empty;
@@ -50,8 +60,16 @@ public sealed partial class KioskAdminViewModel : AppViewModelBase
         KeepScreenOn = kiosk.KeepScreenOn;
         HideSystemBars = kiosk.HideSystemBars;
 
+        StartCommand = MakeDelegateCommand(StartLockTask, () => Kiosk.LockTaskState == LockTaskState.None);
+        StopCommand = MakeDelegateCommand(StopLockTask, () => Kiosk.LockTaskState != LockTaskState.None);
+        OpenSettingsCommand = MakeDelegateCommand(AndroidHelper.OpenSettings, () => Kiosk.LockTaskState == LockTaskState.None);
         SendCommand = MakeAsyncCommand(SendAsync);
         ClearCommand = MakeAsyncCommand(ClearAsync);
+
+        var lockTaskStateChanged = Kiosk.AsObservable(nameof(KioskState.LockTaskState));
+        Observe(lockTaskStateChanged, StartCommand);
+        Observe(lockTaskStateChanged, StopCommand);
+        Observe(lockTaskStateChanged, OpenSettingsCommand);
     }
 
     //--------------------------------------------------------------------------------
@@ -71,6 +89,25 @@ public sealed partial class KioskAdminViewModel : AppViewModelBase
     //--------------------------------------------------------------------------------
     // Operation
     //--------------------------------------------------------------------------------
+
+    private void StartLockTask()
+    {
+        if (Kiosk.IsDeviceOwner)
+        {
+            deviceOwner.AllowLockTask(true);
+        }
+
+        lockTask.Start();
+    }
+
+    private void StopLockTask()
+    {
+        lockTask.Stop();
+        if (Kiosk.IsDeviceOwner)
+        {
+            deviceOwner.AllowLockTask(false);
+        }
+    }
 
     private async Task SendAsync()
     {

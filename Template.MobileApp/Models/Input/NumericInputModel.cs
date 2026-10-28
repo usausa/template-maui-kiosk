@@ -11,13 +11,25 @@ public sealed class NumberInputModel : NotificationObject
 
     public bool AllowEmpty { get; set; }
 
+    public bool KeepLeadingZeros { get; set; }
+
+    public bool Masked { get; set; }
+
     private int IntegerLength => Scale > 0 ? MaxLength - Scale - 1 : MaxLength;
 
     public string Text
     {
         get => text;
-        set => SetProperty(ref text, String.IsNullOrEmpty(value) ? AllowEmpty ? string.Empty : "0" : value);
+        set
+        {
+            if (SetProperty(ref text, String.IsNullOrEmpty(value) ? AllowEmpty ? string.Empty : "0" : value))
+            {
+                RaisePropertyChanged(nameof(DisplayText));
+            }
+        }
     }
+
+    public string DisplayText => Masked ? new string('●', text.Length) : text;
 
     public string NormalizeText => text.EndsWith('.') ? text[..^1] : text;
 
@@ -61,7 +73,7 @@ public sealed class NumberInputModel : NotificationObject
             }
             else
             {
-                if (text == "0")
+                if ((text == "0") && !KeepLeadingZeros)
                 {
                     Text = key;
                 }

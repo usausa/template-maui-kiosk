@@ -250,6 +250,7 @@ public static partial class MauiProgram
         services.AddSingleton<IStorageManager, StorageManager>();
         services.AddSingleton<ManagedConfiguration>();
         services.AddSingleton<DeviceOwner>();
+        services.AddSingleton<LockTask>();
 
         // Resource
         services.AddSingleton<ResourceDictionary>(static _ => Application.Current!.Resources);

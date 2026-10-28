@@ -14,12 +14,22 @@ public sealed partial class KioskState : ObservableObject, IDisposable
 
     private readonly DeviceOwner deviceOwner;
 
-    private readonly IDisposable subscription;
+    private readonly LockTask lockTask;
+
+    private readonly List<IDisposable> disposables = [];
 
     // Device
 
     [ObservableProperty]
     public partial bool IsDeviceOwner { get; private set; }
+
+    // Lock task
+
+    [ObservableProperty]
+    public partial LockTaskState LockTaskState { get; private set; }
+
+    [ObservableProperty]
+    public partial bool IsLockTaskPermitted { get; private set; }
 
     // Configuration
 
@@ -47,30 +57,60 @@ public sealed partial class KioskState : ObservableObject, IDisposable
     public KioskState(
         ILogger<KioskState> log,
         ManagedConfiguration managedConfiguration,
-        DeviceOwner deviceOwner)
+        DeviceOwner deviceOwner,
+        LockTask lockTask)
     {
         this.log = log;
         this.managedConfiguration = managedConfiguration;
         this.deviceOwner = deviceOwner;
+        this.lockTask = lockTask;
 
         IsDeviceOwner = deviceOwner.IsDeviceOwner;
+        RefreshLockTask();
         UpdateConfiguration(managedConfiguration.Settings);
 
-        subscription = managedConfiguration.ChangedAsObservable()
+        disposables.Add(managedConfiguration.ChangedAsObservable()
             .Select(_ => managedConfiguration.Settings)
             .ObserveOnCurrentContext()
-            .Subscribe(UpdateConfiguration);
+            .Subscribe(UpdateConfiguration));
+
+        disposables.Add(lockTask.ChangedAsObservable()
+            .ObserveOnCurrentContext()
+            .Subscribe(_ => RefreshLockTask()));
     }
 
     public void Dispose()
     {
-        subscription.Dispose();
+        foreach (var disposable in disposables)
+        {
+            disposable.Dispose();
+        }
+
+        disposables.Clear();
     }
 
     public void Refresh()
     {
         IsDeviceOwner = deviceOwner.IsDeviceOwner;
+        RefreshLockTask();
         managedConfiguration.Reload();
+    }
+
+    // ------------------------------------------------------------
+    // Lock task
+    // ------------------------------------------------------------
+
+    public void RefreshLockTask()
+    {
+        var state = lockTask.State;
+        var permitted = lockTask.IsPermitted;
+        if ((state != LockTaskState) || (permitted != IsLockTaskPermitted))
+        {
+            log.InfoLockTaskStateChanged(state, permitted);
+        }
+
+        LockTaskState = state;
+        IsLockTaskPermitted = permitted;
     }
 
     // ------------------------------------------------------------

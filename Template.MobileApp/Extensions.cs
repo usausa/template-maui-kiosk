@@ -124,5 +124,8 @@ public static class Extensions
 
     public static IObservable<EventArgs> ChangedAsObservable(this ManagedConfiguration managedConfiguration) =>
         Observable.FromEvent<EventHandler, EventArgs>(static h => (_, e) => h(e), h => managedConfiguration.Changed += h, h => managedConfiguration.Changed -= h);
+
+    public static IObservable<EventArgs> ChangedAsObservable(this LockTask lockTask) =>
+        Observable.FromEvent<EventHandler, EventArgs>(static h => (_, e) => h(e), h => lockTask.Changed += h, h => lockTask.Changed -= h);
 }
 #pragma warning restore CA1724

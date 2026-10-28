@@ -3,6 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:s="http://smart/maui"
              xmlns:shell="clr-namespace:Template.MobileApp.Shell"
+             xmlns:domain="clr-namespace:Template.MobileApp.Domain"
              xmlns:module="clr-namespace:Template.MobileApp.Modules.Kiosk"
              x:Class="Template.MobileApp.Modules.Kiosk.KioskAdminView"
              x:DataType="{x:Type module:KioskAdminViewModel}"
@@ -46,6 +47,12 @@
                 <Setter Property="VerticalTextAlignment" Value="Center" />
             </Style>
 
+            <Style x:Key="AdminValueLabel"
+                   TargetType="Label"
+                   BasedOn="{StaticResource ValueLabel}">
+                <Setter Property="VerticalTextAlignment" Value="Center" />
+            </Style>
+
             <Style x:Key="AdminSwitch"
                    TargetType="Switch">
                 <Setter Property="VerticalOptions" Value="Center" />
@@ -65,6 +72,35 @@
     <ScrollView>
         <VerticalStackLayout Style="{StaticResource AdminStack}">
 
+            <!-- Lock task -->
+            <Label Style="{StaticResource AdminGroupLabel}"
+                   Text="Lock task" />
+            <Grid Style="{StaticResource AdminRowGrid}"
+                  ColumnDefinitions="*,Auto">
+                <Label Grid.Column="0"
+                       Style="{StaticResource AdminNameLabel}"
+                       Text="State" />
+                <Label Grid.Column="1"
+                       Style="{StaticResource AdminValueLabel}"
+                       Text="{Binding Kiosk.LockTaskState}" />
+            </Grid>
+            <Grid Style="{StaticResource AdminButtonGrid}"
+                  ColumnDefinitions="*,*">
+                <Button Grid.Column="0"
+                        Style="{StaticResource PrimaryButton}"
+                        Command="{Binding StartCommand}"
+                        Text="Start" />
+                <Button Grid.Column="1"
+                        Style="{StaticResource SecondaryButton}"
+                        Command="{Binding StopCommand}"
+                        Text="Stop" />
+            </Grid>
+            <Grid Style="{StaticResource AdminButtonGrid}">
+                <Button Style="{StaticResource TertiaryButton}"
+                        Command="{Binding OpenSettingsCommand}"
+                        Text="Open settings" />
+            </Grid>
+
             <!-- Test configuration -->
             <Label Style="{StaticResource AdminGroupLabel}"
                    Text="Test configuration" />
@@ -81,7 +117,7 @@
                            Style="{StaticResource InputEntry}"
                            Text="{Binding AdminPin}"
                            Keyboard="Numeric"
-                           MaxLength="8" />
+                           MaxLength="{x:Static domain:Length.AdminPin}" />
                 </Grid>
                 <Grid Style="{StaticResource AdminRowGrid}"
                       ColumnDefinitions="*,2*">

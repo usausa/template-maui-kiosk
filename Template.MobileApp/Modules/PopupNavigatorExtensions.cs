@@ -8,4 +8,11 @@ public static class PopupNavigatorExtensions
             DialogId.InputNumber,
             new NumberInputParameter(title, value, maxLength));
     }
+
+    public static ValueTask<string?> InputPinAsync(this IPopupNavigator popupNavigator, string title, int maxLength)
+    {
+        return popupNavigator.PopupAsync<NumberInputParameter, string?>(
+            DialogId.InputNumber,
+            new NumberInputParameter(title, string.Empty, maxLength, digits: true, masked: true));
+    }
 }

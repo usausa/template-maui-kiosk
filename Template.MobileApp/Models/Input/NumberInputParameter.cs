@@ -8,10 +8,16 @@ public sealed class NumberInputParameter
 
     public int MaxLength { get; }
 
-    public NumberInputParameter(string title, string value, int maxLength)
+    public bool Digits { get; }
+
+    public bool Masked { get; }
+
+    public NumberInputParameter(string title, string value, int maxLength, bool digits = false, bool masked = false)
     {
         Title = title;
         Value = value;
         MaxLength = maxLength;
+        Digits = digits;
+        Masked = masked;
     }
 }
