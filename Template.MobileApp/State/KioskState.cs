@@ -23,6 +23,9 @@ public sealed partial class KioskState : ObservableObject, IDisposable
     [ObservableProperty]
     public partial bool IsDeviceOwner { get; private set; }
 
+    [ObservableProperty]
+    public partial bool IsPolicyApplied { get; private set; }
+
     // Lock task
 
     [ObservableProperty]
@@ -66,6 +69,7 @@ public sealed partial class KioskState : ObservableObject, IDisposable
         this.lockTask = lockTask;
 
         IsDeviceOwner = deviceOwner.IsDeviceOwner;
+        RefreshPolicy();
         RefreshLockTask();
         UpdateConfiguration(managedConfiguration.Settings);
 
@@ -92,8 +96,24 @@ public sealed partial class KioskState : ObservableObject, IDisposable
     public void Refresh()
     {
         IsDeviceOwner = deviceOwner.IsDeviceOwner;
+        RefreshPolicy();
         RefreshLockTask();
         managedConfiguration.Reload();
+    }
+
+    // ------------------------------------------------------------
+    // Policy
+    // ------------------------------------------------------------
+
+    public void RefreshPolicy()
+    {
+        var applied = deviceOwner.IsPolicyApplied;
+        if (applied != IsPolicyApplied)
+        {
+            log.InfoDevicePolicyStateChanged(applied);
+        }
+
+        IsPolicyApplied = applied;
     }
 
     // ------------------------------------------------------------

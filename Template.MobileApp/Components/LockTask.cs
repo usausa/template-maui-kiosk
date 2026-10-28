@@ -11,7 +11,11 @@ public sealed partial class LockTask : IDisposable
 {
     private const int RequestPolls = 30;
 
+    private const int StopPolls = 20;
+
     private static readonly TimeSpan PollInterval = TimeSpan.FromSeconds(1);
+
+    private static readonly TimeSpan StopPollInterval = TimeSpan.FromMilliseconds(100);
 
     private readonly Lock sync = new();
 
@@ -37,10 +41,21 @@ public sealed partial class LockTask : IDisposable
         Watch(RequestPolls);
     }
 
-    public void Stop()
+    public async ValueTask<bool> StopAsync()
     {
+        if (State == LockTaskState.None)
+        {
+            return true;
+        }
+
         PlatformStop();
         Watch(0);
+        for (var i = 0; (i < StopPolls) && (State != LockTaskState.None); i++)
+        {
+            await Task.Delay(StopPollInterval);
+        }
+
+        return State == LockTaskState.None;
     }
 
     // ------------------------------------------------------------

@@ -26,6 +26,12 @@ internal static partial class Log
     [LoggerMessage(Level = LogLevel.Information, Message = "Lock task state changed. state=[{state}], permitted=[{permitted}]")]
     public static partial void InfoLockTaskStateChanged(this ILogger logger, Components.LockTaskState state, bool permitted);
 
+    [LoggerMessage(Level = LogLevel.Information, Message = "Device policy state changed. applied=[{applied}]")]
+    public static partial void InfoDevicePolicyStateChanged(this ILogger logger, bool applied);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Reboot requested.")]
+    public static partial void InfoRebootRequested(this ILogger logger);
+
     // Navigation
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Unhandled navigation error.")]

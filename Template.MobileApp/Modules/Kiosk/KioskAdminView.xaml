@@ -15,6 +15,12 @@
     <ContentView.Resources>
         <ResourceDictionary>
 
+            <!-- Converter -->
+
+            <s:BoolToTextConverter x:Key="AppliedConverter"
+                                   TrueValue="Applied"
+                                   FalseValue="Not applied" />
+
             <!-- Layout -->
 
             <Style x:Key="AdminStack"
@@ -100,6 +106,40 @@
                         Command="{Binding OpenSettingsCommand}"
                         Text="Open settings" />
             </Grid>
+
+            <!-- Device policy -->
+            <Label Style="{StaticResource AdminGroupLabel}"
+                   Text="Device policy" />
+            <Label Style="{StaticResource AdminNoteLabel}"
+                   IsVisible="{Binding Kiosk.IsDeviceOwner, Converter={StaticResource ReverseConverter}}"
+                   Text="Available when this app is the device owner" />
+            <VerticalStackLayout IsEnabled="{Binding Kiosk.IsDeviceOwner}">
+                <Grid Style="{StaticResource AdminRowGrid}"
+                      ColumnDefinitions="*,Auto">
+                    <Label Grid.Column="0"
+                           Style="{StaticResource AdminNameLabel}"
+                           Text="State" />
+                    <Label Grid.Column="1"
+                           Style="{StaticResource AdminValueLabel}"
+                           Text="{Binding Kiosk.IsPolicyApplied, Converter={StaticResource AppliedConverter}}" />
+                </Grid>
+                <Grid Style="{StaticResource AdminButtonGrid}"
+                      ColumnDefinitions="*,*">
+                    <Button Grid.Column="0"
+                            Style="{StaticResource PrimaryButton}"
+                            Command="{Binding ApplyPolicyCommand}"
+                            Text="Apply" />
+                    <Button Grid.Column="1"
+                            Style="{StaticResource SecondaryButton}"
+                            Command="{Binding ClearPolicyCommand}"
+                            Text="Clear" />
+                </Grid>
+                <Grid Style="{StaticResource AdminButtonGrid}">
+                    <Button Style="{StaticResource TertiaryButton}"
+                            Command="{Binding RebootCommand}"
+                            Text="Reboot" />
+                </Grid>
+            </VerticalStackLayout>
 
             <!-- Test configuration -->
             <Label Style="{StaticResource AdminGroupLabel}"

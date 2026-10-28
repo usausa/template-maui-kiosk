@@ -6,6 +6,8 @@ public sealed partial class KioskAdminViewModel : AppViewModelBase
 {
     // Field
 
+    private readonly ILogger<KioskAdminViewModel> log;
+
     private readonly IDialog dialog;
 
     private readonly DeviceOwner deviceOwner;
@@ -36,6 +38,12 @@ public sealed partial class KioskAdminViewModel : AppViewModelBase
 
     public IObserveCommand OpenSettingsCommand { get; }
 
+    public IObserveCommand ApplyPolicyCommand { get; }
+
+    public IObserveCommand ClearPolicyCommand { get; }
+
+    public IObserveCommand RebootCommand { get; }
+
     public IObserveCommand SendCommand { get; }
 
     public IObserveCommand ClearCommand { get; }
@@ -45,11 +53,13 @@ public sealed partial class KioskAdminViewModel : AppViewModelBase
     //--------------------------------------------------------------------------------
 
     public KioskAdminViewModel(
+        ILogger<KioskAdminViewModel> log,
         IDialog dialog,
         DeviceOwner deviceOwner,
         LockTask lockTask,
         KioskState kiosk)
     {
+        this.log = log;
         this.dialog = dialog;
         this.deviceOwner = deviceOwner;
         this.lockTask = lockTask;
@@ -61,8 +71,11 @@ public sealed partial class KioskAdminViewModel : AppViewModelBase
         HideSystemBars = kiosk.HideSystemBars;
 
         StartCommand = MakeDelegateCommand(StartLockTask, () => Kiosk.LockTaskState == LockTaskState.None);
-        StopCommand = MakeDelegateCommand(StopLockTask, () => Kiosk.LockTaskState != LockTaskState.None);
+        StopCommand = MakeAsyncCommand(StopLockTaskAsync, () => Kiosk.LockTaskState != LockTaskState.None);
         OpenSettingsCommand = MakeDelegateCommand(AndroidHelper.OpenSettings, () => Kiosk.LockTaskState == LockTaskState.None);
+        ApplyPolicyCommand = MakeAsyncCommand(ApplyPolicyAsync, () => !Kiosk.IsPolicyApplied);
+        ClearPolicyCommand = MakeAsyncCommand(ClearPolicyAsync, () => Kiosk.IsPolicyApplied);
+        RebootCommand = MakeAsyncCommand(RebootAsync);
         SendCommand = MakeAsyncCommand(SendAsync);
         ClearCommand = MakeAsyncCommand(ClearAsync);
 
@@ -70,6 +83,10 @@ public sealed partial class KioskAdminViewModel : AppViewModelBase
         Observe(lockTaskStateChanged, StartCommand);
         Observe(lockTaskStateChanged, StopCommand);
         Observe(lockTaskStateChanged, OpenSettingsCommand);
+
+        var policyAppliedChanged = Kiosk.AsObservable(nameof(KioskState.IsPolicyApplied));
+        Observe(policyAppliedChanged, ApplyPolicyCommand);
+        Observe(policyAppliedChanged, ClearPolicyCommand);
     }
 
     //--------------------------------------------------------------------------------
@@ -100,13 +117,52 @@ public sealed partial class KioskAdminViewModel : AppViewModelBase
         lockTask.Start();
     }
 
-    private void StopLockTask()
+    private async Task StopLockTaskAsync()
     {
-        lockTask.Stop();
-        if (Kiosk.IsDeviceOwner)
+        if (await lockTask.StopAsync() && Kiosk.IsDeviceOwner)
         {
             deviceOwner.AllowLockTask(false);
         }
+    }
+
+    private async Task ApplyPolicyAsync()
+    {
+        if (!Kiosk.IsDeviceOwner)
+        {
+            return;
+        }
+
+        deviceOwner.ApplyPolicy();
+        Kiosk.RefreshPolicy();
+        if (Kiosk.LockTaskState == LockTaskState.None)
+        {
+            lockTask.Start();
+        }
+
+        await dialog.Toast("Policy applied");
+    }
+
+    private async Task ClearPolicyAsync()
+    {
+        if (!Kiosk.IsDeviceOwner || !await lockTask.StopAsync())
+        {
+            return;
+        }
+
+        deviceOwner.ClearPolicy();
+        Kiosk.RefreshPolicy();
+        await dialog.Toast("Policy cleared");
+    }
+
+    private async Task RebootAsync()
+    {
+        if (!Kiosk.IsDeviceOwner || !await dialog.ConfirmAsync("Reboot the device?"))
+        {
+            return;
+        }
+
+        log.InfoRebootRequested();
+        deviceOwner.Reboot();
     }
 
     private async Task SendAsync()
