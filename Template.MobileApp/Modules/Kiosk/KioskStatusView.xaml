@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:s="http://smart/maui"
+             xmlns:shell="clr-namespace:Template.MobileApp.Shell"
+             xmlns:module="clr-namespace:Template.MobileApp.Modules.Kiosk"
+             x:Class="Template.MobileApp.Modules.Kiosk.KioskStatusView"
+             x:DataType="{x:Type module:KioskStatusViewModel}"
+             s:BindingContextResolver.Type="{x:Type module:KioskStatusViewModel}"
+             shell:ShellProperty.Title="Status"
+             shell:ShellProperty.Function1Text="Back"
+             shell:ShellProperty.Function1Enabled="True">
+
+    <ContentView.Resources>
+        <ResourceDictionary>
+
+            <!-- Converter -->
+
+            <s:BoolToTextConverter x:Key="YesNoConverter"
+                                   TrueValue="Yes"
+                                   FalseValue="No" />
+
+            <s:BoolToTextConverter x:Key="OnOffConverter"
+                                   TrueValue="On"
+                                   FalseValue="Off" />
+
+            <s:BoolToTextConverter x:Key="SourceConverter"
+                                   TrueValue="MDM"
+                                   FalseValue="Default" />
+
+            <!-- Layout -->
+
+            <Style x:Key="StatusStack"
+                   TargetType="VerticalStackLayout">
+                <Setter Property="Padding" Value="12" />
+                <Setter Property="Spacing" Value="8" />
+            </Style>
+
+            <Style x:Key="StatusGroupLabel"
+                   TargetType="Label"
+                   BasedOn="{StaticResource GroupLabel}">
+                <Setter Property="Margin" Value="0,8,0,0" />
+            </Style>
+
+            <Style x:Key="StatusRowGrid"
+                   TargetType="Grid">
+                <Setter Property="ColumnSpacing" Value="12" />
+            </Style>
+
+            <Style x:Key="StatusValueLabel"
+                   TargetType="Label"
+                   BasedOn="{StaticResource ValueLabel}">
+                <Setter Property="HorizontalTextAlignment" Value="End" />
+                <Setter Property="LineBreakMode" Value="TailTruncation" />
+            </Style>
+
+            <Style x:Key="StatusSourceLabel"
+                   TargetType="Label"
+                   BasedOn="{StaticResource ValueLabel}">
+                <Setter Property="WidthRequest" Value="72" />
+                <Setter Property="FontSize" Value="14" />
+                <Setter Property="HorizontalTextAlignment" Value="End" />
+                <Setter Property="VerticalTextAlignment" Value="Center" />
+            </Style>
+
+        </ResourceDictionary>
+    </ContentView.Resources>
+
+    <!-- Content -->
+    <ScrollView>
+        <VerticalStackLayout Style="{StaticResource StatusStack}">
+
+            <!-- Device -->
+            <Label Style="{StaticResource StatusGroupLabel}"
+                   Text="Device" />
+            <Grid Style="{StaticResource StatusRowGrid}"
+                  ColumnDefinitions="*,Auto">
+                <Label Grid.Column="0"
+                       Style="{StaticResource NameLabel}"
+                       Text="Device owner" />
+                <Label Grid.Column="1"
+                       Style="{StaticResource StatusValueLabel}"
+                       Text="{Binding Kiosk.IsDeviceOwner, Converter={StaticResource YesNoConverter}}" />
+            </Grid>
+
+            <!-- Managed configuration -->
+            <Label Style="{StaticResource StatusGroupLabel}"
+                   Text="Managed configuration" />
+            <Grid Style="{StaticResource StatusRowGrid}"
+                  ColumnDefinitions="*,Auto,Auto">
+                <Label Grid.Column="0"
+                       Style="{StaticResource NameLabel}"
+                       Text="Admin PIN" />
+                <Label Grid.Column="2"
+                       Style="{StaticResource StatusSourceLabel}"
+                       Text="{Binding Kiosk.IsAdminPinConfigured, Converter={StaticResource SourceConverter}}" />
+            </Grid>
+            <Grid Style="{StaticResource StatusRowGrid}"
+                  ColumnDefinitions="*,Auto,Auto">
+                <Label Grid.Column="0"
+                       Style="{StaticResource NameLabel}"
+                       Text="Keep screen on" />
+                <Label Grid.Column="1"
+                       Style="{StaticResource StatusValueLabel}"
+                       Text="{Binding Kiosk.KeepScreenOn, Converter={StaticResource OnOffConverter}}" />
+                <Label Grid.Column="2"
+                       Style="{StaticResource StatusSourceLabel}"
+                       Text="{Binding Kiosk.IsKeepScreenOnConfigured, Converter={StaticResource SourceConverter}}" />
+            </Grid>
+            <Grid Style="{StaticResource StatusRowGrid}"
+                  ColumnDefinitions="*,Auto,Auto">
+                <Label Grid.Column="0"
+                       Style="{StaticResource NameLabel}"
+                       Text="Hide system bars" />
+                <Label Grid.Column="1"
+                       Style="{StaticResource StatusValueLabel}"
+                       Text="{Binding Kiosk.HideSystemBars, Converter={StaticResource OnOffConverter}}" />
+                <Label Grid.Column="2"
+                       Style="{StaticResource StatusSourceLabel}"
+                       Text="{Binding Kiosk.IsHideSystemBarsConfigured, Converter={StaticResource SourceConverter}}" />
+            </Grid>
+            <Grid Style="{StaticResource StatusRowGrid}"
+                  ColumnDefinitions="Auto,*">
+                <Label Grid.Column="0"
+                       Style="{StaticResource NameLabel}"
+                       Text="Message" />
+                <Label Grid.Column="1"
+                       Style="{StaticResource StatusValueLabel}"
+                       Text="{Binding Kiosk.Message, TargetNullValue='-'}" />
+            </Grid>
+
+            <!-- Application -->
+            <Label Style="{StaticResource StatusGroupLabel}"
+                   Text="Application" />
+            <Grid Style="{StaticResource StatusRowGrid}"
+                  ColumnDefinitions="*,Auto">
+                <Label Grid.Column="0"
+                       Style="{StaticResource NameLabel}"
+                       Text="Version" />
+                <Label Grid.Column="1"
+                       Style="{StaticResource StatusValueLabel}"
+                       Text="{Binding Version}" />
+            </Grid>
+            <Grid Style="{StaticResource StatusRowGrid}"
+                  ColumnDefinitions="*,Auto">
+                <Label Grid.Column="0"
+                       Style="{StaticResource NameLabel}"
+                       Text="Build" />
+                <Label Grid.Column="1"
+                       Style="{StaticResource StatusValueLabel}"
+                       Text="{Binding Build}" />
+            </Grid>
+
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentView>

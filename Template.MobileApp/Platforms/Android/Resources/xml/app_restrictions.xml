@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<restrictions xmlns:android="http://schemas.android.com/apk/res/android">
+	<restriction android:key="AdminPin" android:title="Admin PIN" android:restrictionType="string" android:defaultValue="0000" />
+	<restriction android:key="KeepScreenOn" android:title="Keep screen on" android:restrictionType="bool" android:defaultValue="true" />
+	<restriction android:key="HideSystemBars" android:title="Hide system bars" android:restrictionType="bool" android:defaultValue="true" />
+	<restriction android:key="Message" android:title="Message" android:restrictionType="string" />
+</restrictions>

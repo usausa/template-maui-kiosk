@@ -248,6 +248,8 @@ public static partial class MauiProgram
 
         services.AddSingleton<DeviceInformation>();
         services.AddSingleton<IStorageManager, StorageManager>();
+        services.AddSingleton<ManagedConfiguration>();
+        services.AddSingleton<DeviceOwner>();
 
         // Resource
         services.AddSingleton<ResourceDictionary>(static _ => Application.Current!.Resources);
@@ -256,6 +258,7 @@ public static partial class MauiProgram
         services.AddSingleton(BusyState.Default);
         services.AddSingleton<StartupState>();
         services.AddSingleton<DeviceState>();
+        services.AddSingleton<KioskState>();
     }
 
     // ------------------------------------------------------------
@@ -292,6 +295,9 @@ public static partial class MauiProgram
 
         // Start device information
         services.GetRequiredService<DeviceInformation>().Start();
+
+        // Start managed configuration
+        services.GetRequiredService<ManagedConfiguration>().Start();
 
         return app;
     }

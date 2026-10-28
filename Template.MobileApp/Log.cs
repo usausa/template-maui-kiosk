@@ -18,6 +18,11 @@ internal static partial class Log
     [LoggerMessage(Level = LogLevel.Debug, Message = "Connectivity changed. profile=[{profile}], access=[{access}]")]
     public static partial void DebugConnectivityState(this ILogger logger, NetworkProfile profile, NetworkAccess access);
 
+    // Kiosk
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Managed configuration changed. adminPinConfigured=[{adminPinConfigured}], keepScreenOn=[{keepScreenOn}], hideSystemBars=[{hideSystemBars}], message=[{message}]")]
+    public static partial void DebugManagedConfiguration(this ILogger logger, bool adminPinConfigured, bool? keepScreenOn, bool? hideSystemBars, string? message);
+
     // Navigation
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Unhandled navigation error.")]

@@ -12,6 +12,8 @@ public sealed class MainPageViewModel : ExtendViewModelBase, IShellControl, IApp
 
     private readonly IScreen screen;
 
+    private readonly KioskState kioskState;
+
     private bool destroying;
 
     private IDisposable? navigatingBusy;
@@ -55,11 +57,13 @@ public sealed class MainPageViewModel : ExtendViewModelBase, IShellControl, IApp
         StartupState startup,
         INavigator navigator,
         IScreen screen,
-        IDialog dialog)
+        IDialog dialog,
+        KioskState kioskState)
     {
         Startup = startup;
         Navigator = navigator;
         this.screen = screen;
+        this.kioskState = kioskState;
 
         Function1Command = CreateFunctionCommand(Functions[0], ShellEvent.Function1);
         Function2Command = CreateFunctionCommand(Functions[1], ShellEvent.Function2);
@@ -124,6 +128,7 @@ public sealed class MainPageViewModel : ExtendViewModelBase, IShellControl, IApp
 
     public void OnResumed()
     {
+        kioskState.Refresh();
     }
 
     public void OnDestroying()

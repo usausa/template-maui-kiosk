@@ -2,5 +2,7 @@ namespace Template.MobileApp.Modules;
 
 public enum ViewId
 {
-    Menu
+    Menu,
+    KioskStatus,
+    KioskAdmin
 }

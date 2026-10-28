@@ -121,5 +121,8 @@ public static class Extensions
 
     public static IObservable<EventArgs> WiFiChangedAsObservable(this DeviceInformation deviceInformation) =>
         Observable.FromEvent<EventHandler, EventArgs>(static h => (_, e) => h(e), h => deviceInformation.WiFiChanged += h, h => deviceInformation.WiFiChanged -= h);
+
+    public static IObservable<EventArgs> ChangedAsObservable(this ManagedConfiguration managedConfiguration) =>
+        Observable.FromEvent<EventHandler, EventArgs>(static h => (_, e) => h(e), h => managedConfiguration.Changed += h, h => managedConfiguration.Changed -= h);
 }
 #pragma warning restore CA1724

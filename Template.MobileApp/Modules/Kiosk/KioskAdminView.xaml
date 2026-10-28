@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:s="http://smart/maui"
+             xmlns:shell="clr-namespace:Template.MobileApp.Shell"
+             xmlns:module="clr-namespace:Template.MobileApp.Modules.Kiosk"
+             x:Class="Template.MobileApp.Modules.Kiosk.KioskAdminView"
+             x:DataType="{x:Type module:KioskAdminViewModel}"
+             s:BindingContextResolver.Type="{x:Type module:KioskAdminViewModel}"
+             shell:ShellProperty.Title="Admin"
+             shell:ShellProperty.Function1Text="Back"
+             shell:ShellProperty.Function1Enabled="True">
+
+    <ContentView.Resources>
+        <ResourceDictionary>
+
+            <!-- Layout -->
+
+            <Style x:Key="AdminStack"
+                   TargetType="VerticalStackLayout">
+                <Setter Property="Padding" Value="12" />
+                <Setter Property="Spacing" Value="8" />
+            </Style>
+
+            <Style x:Key="AdminGroupLabel"
+                   TargetType="Label"
+                   BasedOn="{StaticResource GroupLabel}">
+                <Setter Property="Margin" Value="0,8,0,0" />
+            </Style>
+
+            <Style x:Key="AdminNoteLabel"
+                   TargetType="Label"
+                   BasedOn="{StaticResource ValueLabel}">
+                <Setter Property="FontSize" Value="14" />
+            </Style>
+
+            <Style x:Key="AdminRowGrid"
+                   TargetType="Grid">
+                <Setter Property="ColumnSpacing" Value="12" />
+                <Setter Property="MinimumHeightRequest" Value="48" />
+            </Style>
+
+            <Style x:Key="AdminNameLabel"
+                   TargetType="Label"
+                   BasedOn="{StaticResource NameLabel}">
+                <Setter Property="VerticalTextAlignment" Value="Center" />
+            </Style>
+
+            <Style x:Key="AdminSwitch"
+                   TargetType="Switch">
+                <Setter Property="VerticalOptions" Value="Center" />
+            </Style>
+
+            <Style x:Key="AdminButtonGrid"
+                   TargetType="Grid">
+                <Setter Property="Margin" Value="0,8,0,0" />
+                <Setter Property="ColumnSpacing" Value="8" />
+                <Setter Property="HeightRequest" Value="56" />
+            </Style>
+
+        </ResourceDictionary>
+    </ContentView.Resources>
+
+    <!-- Content -->
+    <ScrollView>
+        <VerticalStackLayout Style="{StaticResource AdminStack}">
+
+            <!-- Test configuration -->
+            <Label Style="{StaticResource AdminGroupLabel}"
+                   Text="Test configuration" />
+            <Label Style="{StaticResource AdminNoteLabel}"
+                   IsVisible="{Binding Kiosk.IsDeviceOwner, Converter={StaticResource ReverseConverter}}"
+                   Text="Available when this app is the device owner" />
+            <VerticalStackLayout IsEnabled="{Binding Kiosk.IsDeviceOwner}">
+                <Grid Style="{StaticResource AdminRowGrid}"
+                      ColumnDefinitions="*,2*">
+                    <Label Grid.Column="0"
+                           Style="{StaticResource AdminNameLabel}"
+                           Text="Admin PIN" />
+                    <Entry Grid.Column="1"
+                           Style="{StaticResource InputEntry}"
+                           Text="{Binding AdminPin}"
+                           Keyboard="Numeric"
+                           MaxLength="8" />
+                </Grid>
+                <Grid Style="{StaticResource AdminRowGrid}"
+                      ColumnDefinitions="*,2*">
+                    <Label Grid.Column="0"
+                           Style="{StaticResource AdminNameLabel}"
+                           Text="Message" />
+                    <Entry Grid.Column="1"
+                           Style="{StaticResource InputEntry}"
+                           Text="{Binding Message}" />
+                </Grid>
+                <Grid Style="{StaticResource AdminRowGrid}"
+                      ColumnDefinitions="*,Auto">
+                    <Label Grid.Column="0"
+                           Style="{StaticResource AdminNameLabel}"
+                           Text="Keep screen on" />
+                    <Switch Grid.Column="1"
+                            Style="{StaticResource AdminSwitch}"
+                            IsToggled="{Binding KeepScreenOn}" />
+                </Grid>
+                <Grid Style="{StaticResource AdminRowGrid}"
+                      ColumnDefinitions="*,Auto">
+                    <Label Grid.Column="0"
+                           Style="{StaticResource AdminNameLabel}"
+                           Text="Hide system bars" />
+                    <Switch Grid.Column="1"
+                            Style="{StaticResource AdminSwitch}"
+                            IsToggled="{Binding HideSystemBars}" />
+                </Grid>
+                <Grid Style="{StaticResource AdminButtonGrid}"
+                      ColumnDefinitions="*,*">
+                    <Button Grid.Column="0"
+                            Style="{StaticResource PrimaryButton}"
+                            Command="{Binding SendCommand}"
+                            Text="Send" />
+                    <Button Grid.Column="1"
+                            Style="{StaticResource SecondaryButton}"
+                            Command="{Binding ClearCommand}"
+                            Text="Clear" />
+                </Grid>
+            </VerticalStackLayout>
+
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentView>
