@@ -1,1 +1,1 @@
-# work-maui-pad
+# template-maui-kiosk
