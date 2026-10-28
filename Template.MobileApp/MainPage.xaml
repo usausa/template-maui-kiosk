@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:s="http://smart/maui"
+             xmlns:navigation="http://smart/navigation"
+             xmlns:mct="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+             xmlns:application="clr-namespace:Template.MobileApp"
+             xmlns:shell="clr-namespace:Template.MobileApp.Shell"
+             x:Class="Template.MobileApp.MainPage"
+             x:DataType="{x:Type application:MainPageViewModel}"
+             s:BindingContextResolver.Type="{x:Type application:MainPageViewModel}"
+             SafeAreaEdges="Default">
+
+    <ContentPage.Resources>
+        <ResourceDictionary>
+
+            <!-- Startup -->
+
+            <Style x:Key="StartupGrid"
+                   TargetType="Grid">
+                <Setter Property="BackgroundColor" Value="White" />
+            </Style>
+
+            <Style x:Key="StartupStack"
+                   TargetType="VerticalStackLayout">
+                <Setter Property="Padding" Value="32,0" />
+                <Setter Property="Spacing" Value="12" />
+                <Setter Property="VerticalOptions" Value="Center" />
+            </Style>
+
+            <Style x:Key="StartupLabel"
+                   TargetType="Label">
+                <Setter Property="FontSize" Value="14" />
+                <Setter Property="HorizontalTextAlignment" Value="Center" />
+                <Setter Property="TextColor" Value="{StaticResource SecondaryTextColor}" />
+            </Style>
+
+        </ResourceDictionary>
+    </ContentPage.Resources>
+
+    <ContentPage.Behaviors>
+        <s:AppLifecycleBehavior />
+        <shell:ShellUpdateBehavior Navigator="{Binding Navigator, Mode=OneTime}" />
+        <mct:StatusBarBehavior ApplyOn="OnBehaviorAttachedTo"
+                               StatusBarColor="{StaticResource BlueDefault}"
+                               StatusBarStyle="LightContent" />
+    </ContentPage.Behaviors>
+
+    <!-- Content -->
+    <Grid Style="{StaticResource MainGrid}"
+          RowDefinitions="Auto,*,Auto">
+
+        <!-- Overlay -->
+        <Rectangle Grid.Row="0" Grid.RowSpan="3"
+                   shell:ShellProperty.BusyOverlay="True"
+                   IsVisible="{Binding BusyState.IsBusy}" />
+
+        <!-- Header -->
+        <Grid Grid.Row="0"
+              Style="{StaticResource HeaderGrid}"
+              ColumnDefinitions="*"
+              IsVisible="{Binding HeaderVisible.Value}">
+            <Label Grid.Column="0"
+                   Style="{StaticResource HeaderTitleLabel}"
+                   Text="{Binding Title.Value}" />
+        </Grid>
+
+        <!-- View container -->
+        <AbsoluteLayout Grid.Row="1"
+                        Style="{StaticResource ContainerLayout}"
+                        IsClippedToBounds="True">
+            <AbsoluteLayout.Behaviors>
+                <navigation:NavigationContainerBehavior Navigator="{Binding Navigator}" />
+            </AbsoluteLayout.Behaviors>
+        </AbsoluteLayout>
+
+        <!-- Footer -->
+        <Grid Grid.Row="2"
+              Style="{StaticResource FunctionGrid}"
+              ColumnDefinitions="*,*,*,*"
+              IsVisible="{Binding FunctionVisible.Value}">
+            <Button Grid.Column="0"
+                    Style="{StaticResource FunctionButton1}"
+                    Command="{Binding Function1Command}"
+                    Text="{Binding Function1.Text.Value}" />
+            <Button Grid.Column="1"
+                    Style="{StaticResource FunctionButton2}"
+                    Command="{Binding Function2Command}"
+                    Text="{Binding Function2.Text.Value}" />
+            <Button Grid.Column="2"
+                    Style="{StaticResource FunctionButton3}"
+                    Command="{Binding Function3Command}"
+                    Text="{Binding Function3.Text.Value}" />
+            <Button Grid.Column="3"
+                    Style="{StaticResource FunctionButton4}"
+                    Command="{Binding Function4Command}"
+                    Text="{Binding Function4.Text.Value}" />
+        </Grid>
+
+        <!-- Startup -->
+        <Grid Grid.Row="0" Grid.RowSpan="3"
+              Style="{StaticResource StartupGrid}"
+              IsVisible="{Binding Startup.IsCompleted, Converter={StaticResource ReverseConverter}}">
+            <VerticalStackLayout Style="{StaticResource StartupStack}">
+                <ActivityIndicator Style="{StaticResource BasicLoadingIndicator}"
+                                   IsRunning="True" />
+                <Label Style="{StaticResource StartupLabel}"
+                       Text="Loading" />
+            </VerticalStackLayout>
+        </Grid>
+    </Grid>
+
+</ContentPage>
