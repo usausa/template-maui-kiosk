@@ -25,16 +25,22 @@ For dedicated devices, a MAUI template project for Android kiosk apps used from 
 ## 🧩 Android technologies
 
 The state used by the screens and `MainActivity` is gathered in `State/KioskState.cs`.  
-The Android parts are in `Components` (`.android.cs`) and `Platforms/Android`.
+The Android parts are in `Components` (`.android.cs`) and `Platforms/Android`.  
+In the tables, 🧱 Base can be copied to another app as is, and 📝 App needs changes for the app.
 
-### Managed configurations
+### 📋 Managed configurations
 
 The MDM sets values for the items declared by the app, and the app reads them.  
 Only the keys set by the MDM are returned, so the app holds the default values.  
 The values are read at startup and when the app returns to the front, and changes are received by a receiver registered at run time.
 
-- Android: `app_restrictions.xml` and the `android.content.APP_RESTRICTIONS` meta-data, `RestrictionsManager.getApplicationRestrictions()`, `ACTION_APPLICATION_RESTRICTIONS_CHANGED`
-- Source: `Platforms/Android/Resources/xml/app_restrictions.xml`, `Platforms/Android/MainApplication.cs`, `Components/ManagedConfiguration.cs` + `.android.cs`, `State/KioskState.cs` (default values), `MainPageViewModel.cs` (`OnResumed`)
+| Source | Kind | Contents |
+|---|---|---|
+| `Platforms/Android/Resources/xml/app_restrictions.xml` | 📝 App | Declaration of the items (`<restrictions>`) |
+| `Platforms/Android/MainApplication.cs` | 🧱 Base | `android.content.APP_RESTRICTIONS` meta-data |
+| `Components/ManagedConfiguration.cs` + `.android.cs` | 📝 App | Reading with `RestrictionsManager.getApplicationRestrictions()`, and receiving `ACTION_APPLICATION_RESTRICTIONS_CHANGED` (the keys are the app's) |
+| `State/KioskState.cs` | 📝 App | Default values |
+| `MainPageViewModel.cs` | 📝 App | Reading again in `OnResumed` |
 
 | Key | Type | Default | Use |
 |---|---|---|---|
@@ -43,50 +49,122 @@ The values are read at startup and when the app returns to the front, and change
 | `HideSystemBars` | bool | `true` | Hide the system bars during lock task mode |
 | `Message` | string | | Message shown on the menu |
 
-### Device owner
+```xml
+<restriction android:key="AdminPin" android:title="Admin PIN" android:restrictionType="string" android:defaultValue="0000" />
+```
+
+```csharp
+[MetaData("android.content.APP_RESTRICTIONS", Resource = "@xml/app_restrictions")]
+public sealed class MainApplication : MauiApplication
+
+using var bundle = restrictionsManager.ApplicationRestrictions;
+var adminPin = bundle.ContainsKey(AdminPinKey) ? bundle.GetString(AdminPinKey) : null;
+```
+
+### 👑 Device owner
 
 The app has a device admin receiver, and becomes the device owner with `dpm set-device-owner`.  
 The Debug build is test-only, so the device owner can be removed with `dpm remove-active-admin`.
 
-- Android: `DeviceAdminReceiver`, `device_admin.xml`, `DevicePolicyManager.isDeviceOwnerApp()`, `android:testOnly`
-- Source: `Platforms/Android/KioskAdminReceiver.cs`, `Platforms/Android/Resources/xml/device_admin.xml`, `Components/DeviceOwner.cs` + `.android.cs`, `Platforms/Android/AndroidManifest.xml` and `AndroidManifestPlaceholders` in `Template.MobileApp.csproj` (test-only)
+| Source | Kind | Contents |
+|---|---|---|
+| `Platforms/Android/KioskAdminReceiver.cs` | 🧱 Base | `DeviceAdminReceiver` |
+| `Platforms/Android/Resources/xml/device_admin.xml` | 🧱 Base | Policies of the device admin (none) |
+| `Components/DeviceOwner.cs` + `.android.cs` | 📝 App | Detection with `DevicePolicyManager.isDeviceOwnerApp()`, and the device policy and keys of the app |
+| `Platforms/Android/AndroidManifest.xml`, `Template.MobileApp.csproj` | 🧱 Base | `android:testOnly` only for the Debug build (`AndroidManifestPlaceholders`) |
 
-### Lock task mode
+```csharp
+[BroadcastReceiver(Name = "template.mobileapp.KioskAdminReceiver", Exported = true, Permission = "android.permission.BIND_DEVICE_ADMIN")]
+[MetaData("android.app.device_admin", Resource = "@xml/device_admin")]
+[IntentFilter(["android.app.action.DEVICE_ADMIN_ENABLED"])]
+public sealed class KioskAdminReceiver : DeviceAdminReceiver
+```
+
+```xml
+<PropertyGroup Condition="'$(Configuration)' == 'Debug'">
+  <AndroidManifestPlaceholders>testOnly=true</AndroidManifestPlaceholders>
+</PropertyGroup>
+```
+
+### 🔒 Lock task mode
 
 An app allowed by the device owner or an MDM enters lock task mode at launch, and HOME and recent apps do not leave the app.  
 Without the permission, `startLockTask()` starts screen pinning, which the user confirms and can stop.  
 The state is read from `ActivityManager`, and its changes are received by the device admin receiver (polled for screen pinning).
 
-- Android: `DevicePolicyManager.setLockTaskPackages()`, `android:lockTaskMode="if_whitelisted"`, `Activity.startLockTask()` / `stopLockTask()`, `ActivityManager.getLockTaskModeState()`, `DeviceAdminReceiver.onLockTaskModeEntering()` / `onLockTaskModeExiting()`
-- Source: `Platforms/Android/MainActivity.cs` (`LockTaskMode`), `Components/LockTask.cs` + `.android.cs`, `Platforms/Android/KioskAdminReceiver.cs`, `Modules/Kiosk/KioskAdminViewModel.cs` (Start, Stop)
+| Source | Kind | Contents |
+|---|---|---|
+| `Platforms/Android/MainActivity.cs` | 🧱 Base | `LockTaskMode = "if_whitelisted"` and `SingleTask` in `[Activity]` |
+| `Components/LockTask.cs` + `.android.cs` | 🧱 Base | `Activity.startLockTask()` / `stopLockTask()`, `ActivityManager.getLockTaskModeState()`, `DevicePolicyManager.isLockTaskPermitted()`, and waiting for the stop (`StopAsync`) |
+| `Platforms/Android/KioskAdminReceiver.cs` | 🧱 Base | `onLockTaskModeEntering()` / `onLockTaskModeExiting()` |
+| `Components/DeviceOwner.android.cs` | 📝 App | Permission with `DevicePolicyManager.setLockTaskPackages()` |
+| `Modules/Kiosk/KioskAdminViewModel.cs` | 📝 App | Start and Stop |
 
-### Full screen and keep screen on
+```csharp
+[Activity(LaunchMode = LaunchMode.SingleTask, LockTaskMode = "if_whitelisted", ...)]
+public sealed class MainActivity : MauiAppCompatActivity
+
+policyManager.SetLockTaskPackages(admin, [Application.Context.PackageName!]);
+ActivityResolver.CurrentActivity.StartLockTask();
+```
+
+### 📺 Full screen and keep screen on
 
 During lock task mode, the system bars are hidden and the screen stays on.  
 A swipe shows the system bars for a while.  
 Both follow the managed configurations.
 
-- Android: `WindowInsetsControllerCompat` (`BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE`), `FLAG_KEEP_SCREEN_ON`
-- Source: `Platforms/Android/MainActivity.cs` (`UpdateKioskWindow`)
+| Source | Kind | Contents |
+|---|---|---|
+| `Platforms/Android/MainActivity.cs` (`UpdateKioskWindow`) | 📝 App | `WindowInsetsControllerCompat` (`BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE`) and `FLAG_KEEP_SCREEN_ON`, by the state in `KioskState` |
 
-### Admin screen
+```csharp
+window.AddFlags(WindowManagerFlags.KeepScreenOn);
+controller.SystemBarsBehavior = WindowInsetsControllerCompat.BehaviorShowTransientBarsBySwipe;
+controller.Hide(WindowInsetsCompat.Type.SystemBars());
+```
+
+### 🔑 Admin screen
 
 Admin on the menu opens the admin screen after the PIN of the managed configurations.  
 On the admin screen, lock task mode is stopped for maintenance, and Open settings opens the Android settings.
 
-- Android: `Settings.ACTION_SETTINGS`
-- Source: `Modules/Main/MenuViewModel.cs`, `Modules/PopupNavigatorExtensions.cs` (`InputPinAsync`), `Modules/Navigation/Modal/InputNumberView.xaml` (masked digits), `Modules/Kiosk/KioskAdminView.xaml` + `KioskAdminViewModel.cs`, `Platforms/Android/AndroidHelper.cs` (`OpenSettings`)
+| Source | Kind | Contents |
+|---|---|---|
+| `Modules/Main/MenuViewModel.cs` | 📝 App | PIN check |
+| `Modules/PopupNavigatorExtensions.cs`, `Modules/Navigation/Modal/InputNumberView.xaml` + `InputNumberViewModel.cs`, `Models/Input/` | 🧱 Base | PIN input with masked digits (`InputPinAsync`) |
+| `Modules/Kiosk/KioskAdminView.xaml` + `KioskAdminViewModel.cs` | 📝 App | Admin screen |
+| `Platforms/Android/AndroidHelper.cs` | 🧱 Base | Android settings with `Settings.ACTION_SETTINGS` (`OpenSettings`) |
 
-### Home app
+```csharp
+var pin = await popupNavigator.InputPinAsync("Admin PIN", Length.AdminPin);
+if (pin == Kiosk.AdminPin)
+{
+    await Navigator.ForwardAsync(ViewId.KioskAdmin);
+}
+```
+
+### 🏠 Home app
 
 `HomeActivity` has the HOME intent filter and is disabled by default, so it is not offered as a home app on ordinary devices.  
 The device owner enables it and fixes it as the home app, so the app starts after a reboot.  
 `HomeActivity` only opens `MainActivity` and closes, so `MainActivity` stays a single instance in a standard task.
 
-- Android: `ACTION_MAIN` + `CATEGORY_HOME` + `CATEGORY_DEFAULT`, `PackageManager.setComponentEnabledSetting()`, `DevicePolicyManager.addPersistentPreferredActivity()` / `clearPackagePersistentPreferredActivities()`
-- Source: `Platforms/Android/HomeActivity.cs`, `Components/DeviceOwner.android.cs`
+| Source | Kind | Contents |
+|---|---|---|
+| `Platforms/Android/HomeActivity.cs` | 🧱 Base | `ACTION_MAIN` + `CATEGORY_HOME` + `CATEGORY_DEFAULT`, disabled by default, and opening `MainActivity` |
+| `Components/DeviceOwner.android.cs` | 📝 App | `PackageManager.setComponentEnabledSetting()`, `DevicePolicyManager.addPersistentPreferredActivity()` / `clearPackagePersistentPreferredActivities()` |
 
-### Device policy
+```csharp
+[Activity(Theme = "@android:style/Theme.NoDisplay", TaskAffinity = "", Enabled = false, Exported = true)]
+[IntentFilter([Intent.ActionMain], Categories = [Intent.CategoryHome, Intent.CategoryDefault])]
+public sealed class HomeActivity : Activity
+
+packageManager.SetComponentEnabledSetting(home, ComponentEnabledState.Enabled, ComponentEnableOption.DontKillApp);
+policyManager.AddPersistentPreferredActivity(admin, filter, home);
+```
+
+### 📜 Device policy
 
 Apply on the admin screen sets the following as the device owner, and Clear removes them.
 
@@ -102,28 +180,60 @@ Apply on the admin screen sets the following as the device owner, and Clear remo
 Clear waits for lock task mode to stop, and removes the lock task permission first.  
 On Android 14 and later, setting the lock task features applies the permission again, and a locked task that loses the permission is closed.
 
-- Source: `Components/DeviceOwner.android.cs` (`PlatformApplyPolicy`, `PlatformClearPolicy`), `Components/LockTask.cs` (`StopAsync`), `Modules/Kiosk/KioskAdminViewModel.cs` (Apply, Clear)
+| Source | Kind | Contents |
+|---|---|---|
+| `Components/DeviceOwner.android.cs` | 📝 App | Device policy to apply and clear (`PlatformApplyPolicy`, `PlatformClearPolicy`) |
+| `Components/LockTask.cs` | 🧱 Base | Waiting for lock task mode to stop (`StopAsync`) |
+| `Modules/Kiosk/KioskAdminViewModel.cs` | 📝 App | Apply and Clear |
 
-### Reboot
+```csharp
+policyManager.SetLockTaskFeatures(admin, LockTaskFeatures.SystemInfo | LockTaskFeatures.GlobalActions);
+policyManager.SetKeyguardDisabled(admin, true);
+policyManager.AddUserRestriction(admin, UserManager.DisallowFactoryReset);
+```
+
+### 🔌 Reboot
 
 Reboot on the admin screen restarts the device after a confirmation.
 
-- Android: `DevicePolicyManager.reboot()`
-- Source: `Components/DeviceOwner.android.cs`, `Modules/Kiosk/KioskAdminViewModel.cs`
+| Source | Kind | Contents |
+|---|---|---|
+| `Components/DeviceOwner.android.cs` | 📝 App | `DevicePolicyManager.reboot()` |
+| `Modules/Kiosk/KioskAdminViewModel.cs` | 📝 App | Confirmation and reboot |
 
-### Test configuration
+```csharp
+if (await dialog.ConfirmAsync("Reboot the device?"))
+{
+    deviceOwner.Reboot();
+}
+```
+
+### 🧪 Test configuration
 
 The device owner sets the managed configurations of its own app, to try them without an MDM.
 
-- Android: `DevicePolicyManager.setApplicationRestrictions()`
-- Source: `Components/DeviceOwner.android.cs` (`PlatformSendConfiguration`), `Modules/Kiosk/KioskAdminViewModel.cs` (Send, Clear)
+| Source | Kind | Contents |
+|---|---|---|
+| `Components/DeviceOwner.android.cs` | 📝 App | `DevicePolicyManager.setApplicationRestrictions()` (`PlatformSendConfiguration`) |
+| `Modules/Kiosk/KioskAdminViewModel.cs` | 📝 App | Send and Clear |
 
-### Backup
+```csharp
+bundle.PutString(ManagedConfiguration.AdminPinKey, settings.AdminPin);
+policyManager.SetApplicationRestrictions(admin, Application.Context.PackageName, bundle);
+```
+
+### 💾 Backup
 
 The app data of a dedicated device is not backed up or transferred.
 
-- Android: `android:allowBackup="false"`, `android:dataExtractionRules`
-- Source: `Platforms/Android/AndroidManifest.xml`, `Platforms/Android/Resources/xml/data_extraction_rules.xml`
+| Source | Kind | Contents |
+|---|---|---|
+| `Platforms/Android/AndroidManifest.xml` | 🧱 Base | `android:allowBackup="false"` and `android:dataExtractionRules` |
+| `Platforms/Android/Resources/xml/data_extraction_rules.xml` | 🧱 Base | All domains excluded from the cloud backup and the device transfer |
+
+```xml
+<application android:allowBackup="false" android:dataExtractionRules="@xml/data_extraction_rules" ... />
+```
 
 ## 🔄 How it works
 
