@@ -9,7 +9,6 @@ using Android.Content.PM;
 using Android.OS;
 using Android.Views;
 
-using AndroidX.Activity;
 using AndroidX.Core.View;
 
 using Template.MobileApp.Components;
@@ -27,17 +26,12 @@ using Template.MobileApp.Components;
     ScreenOrientation = ScreenOrientation.Portrait)]
 public sealed class MainActivity : MauiAppCompatActivity
 {
-    private BackPressedCallback? backPressedCallback;
-
     protected override void OnCreate(Bundle? savedInstanceState)
     {
         // Disable overscroll effect
         Theme?.ApplyStyle(_Microsoft.Android.Resource.Designer.ResourceConstant.Style.NoOverScrollTheme, true);
 
         base.OnCreate(savedInstanceState);
-
-        backPressedCallback = new BackPressedCallback(this);
-        OnBackPressedDispatcher.AddCallback(this, backPressedCallback);
 
         if (FindKioskState() is { } kioskState)
         {
@@ -65,17 +59,6 @@ public sealed class MainActivity : MauiAppCompatActivity
         {
             FindKioskState()?.RefreshLockTask();
         }
-    }
-
-    protected override void Dispose(bool disposing)
-    {
-        if (disposing)
-        {
-            backPressedCallback?.Dispose();
-            backPressedCallback = null;
-        }
-
-        base.Dispose(disposing);
     }
 
     private void OnKioskStateChanged(object? sender, PropertyChangedEventArgs e)
@@ -120,37 +103,6 @@ public sealed class MainActivity : MauiAppCompatActivity
         else
         {
             controller.Show(WindowInsetsCompat.Type.SystemBars());
-        }
-    }
-
-    private sealed class BackPressedCallback : OnBackPressedCallback
-    {
-        private readonly MainActivity activity;
-
-        public BackPressedCallback(MainActivity activity)
-            : base(true)
-        {
-            this.activity = activity;
-        }
-
-        public override void HandleOnBackPressed()
-        {
-            var windows = Microsoft.Maui.Controls.Application.Current?.Windows;
-            var page = windows is { Count: > 0 } ? windows[^1].Page : null;
-            if (page?.SendBackButtonPressed() ?? false)
-            {
-                return;
-            }
-
-            Enabled = false;
-            try
-            {
-                activity.OnBackPressedDispatcher.OnBackPressed();
-            }
-            finally
-            {
-                Enabled = true;
-            }
         }
     }
 }
