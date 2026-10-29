@@ -4,18 +4,25 @@ using Fonts;
 
 public static class AppIcons
 {
-    private const double FunctionSize = 36d;
+    private const double MenuSize = 24d;
 
-    public static readonly FontImageSource Close = Create(MaterialIcons.Close);
+    //--------------------------------------------------------------------------------
+    // Menu (Material / 24 / White)
+    //--------------------------------------------------------------------------------
 
-    public static readonly FontImageSource Check = Create(MaterialIcons.Check);
+    public static readonly FontImageSource AdminPanelSettings = Create(MaterialIcons.Admin_panel_settings, MenuSize, Colors.White);
+    public static readonly FontImageSource Info = Create(MaterialIcons.Info, MenuSize, Colors.White);
 
-    private static FontImageSource Create(string glyph) =>
+    //--------------------------------------------------------------------------------
+    // Helper
+    //--------------------------------------------------------------------------------
+
+    private static FontImageSource Create(string glyph, double size, Color color) =>
         new()
         {
             FontFamily = MaterialIcons.FontFamily,
             Glyph = glyph,
-            Size = FunctionSize,
-            Color = Colors.White
+            Size = size,
+            Color = color
         };
 }

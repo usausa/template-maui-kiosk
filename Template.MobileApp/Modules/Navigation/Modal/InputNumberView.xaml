@@ -3,8 +3,8 @@
            xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
            xmlns:s="http://smart/maui"
            xmlns:mct="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+           xmlns:fonts="clr-namespace:Fonts"
            xmlns:behaviors="clr-namespace:Template.MobileApp.Behaviors"
-           xmlns:markup="clr-namespace:Template.MobileApp.Markup"
            xmlns:modules="clr-namespace:Template.MobileApp.Modules"
            xmlns:module="clr-namespace:Template.MobileApp.Modules.Navigation.Modal"
            x:Class="Template.MobileApp.Modules.Navigation.Modal.InputNumberView"
@@ -96,14 +96,13 @@
             <Button Grid.Column="0"
                     Style="{StaticResource InputCancelIconButton}"
                     Command="{Binding CloseCommand}"
-                    ImageSource="{x:Static markup:AppIcons.Close}" />
+                    Text="{x:Static fonts:MaterialIcons.Close}" />
             <Button Grid.Column="1"
                     Style="{StaticResource InputIconButton}"
                     behaviors:Focus.Default="True"
                     Command="{Binding CommitCommand}"
-                    ImageSource="{x:Static markup:AppIcons.Check}" />
+                    Text="{x:Static fonts:MaterialIcons.Check}" />
         </Grid>
-
     </VerticalStackLayout>
 
 </mct:Popup>

@@ -26,7 +26,8 @@
     </ContentView.Resources>
 
     <!-- Content -->
-    <Grid RowDefinitions="Auto,*">
+    <Grid Style="{StaticResource FillGrid}"
+          RowDefinitions="Auto,*">
 
         <Label Grid.Row="0"
                Style="{StaticResource MessageLabel}"
@@ -36,17 +37,38 @@
         <Grid Grid.Row="1"
               Style="{StaticResource MenuGrid}"
               RowDefinitions="*,*,*,*,*,*,*,*,*">
-
             <Button Grid.Row="0"
-                    Style="{StaticResource MenuButton}"
+                    Style="{StaticResource MenuIconButton}"
                     Command="{Binding ForwardCommand}"
                     CommandParameter="{markup:ViewId KioskStatus}"
-                    Text="Status" />
+                    Text="Status"
+                    ImageSource="{x:Static markup:AppIcons.Info}" />
             <Button Grid.Row="1"
-                    Style="{StaticResource MenuButton}"
+                    Style="{StaticResource MenuIconButton}"
                     Command="{Binding AdminCommand}"
-                    Text="Admin" />
-
+                    Text="Admin"
+                    ImageSource="{x:Static markup:AppIcons.AdminPanelSettings}" />
+            <Button Grid.Row="2"
+                    Style="{StaticResource MenuButton}"
+                    IsEnabled="False" />
+            <Button Grid.Row="3"
+                    Style="{StaticResource MenuButton}"
+                    IsEnabled="False" />
+            <Button Grid.Row="4"
+                    Style="{StaticResource MenuButton}"
+                    IsEnabled="False" />
+            <Button Grid.Row="5"
+                    Style="{StaticResource MenuButton}"
+                    IsEnabled="False" />
+            <Button Grid.Row="6"
+                    Style="{StaticResource MenuButton}"
+                    IsEnabled="False" />
+            <Button Grid.Row="7"
+                    Style="{StaticResource MenuButton}"
+                    IsEnabled="False" />
+            <Button Grid.Row="8"
+                    Style="{StaticResource MenuButton}"
+                    IsEnabled="False" />
         </Grid>
     </Grid>
 
