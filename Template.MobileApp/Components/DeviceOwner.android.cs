@@ -12,6 +12,8 @@ public sealed partial class DeviceOwner
 
     private const int StayOnNever = 0;
 
+    private const string PreviousStayOnKey = "PreviousStayOnWhilePluggedIn";
+
     private static readonly string[] UserRestrictions =
     [
         UserManager.DisallowSafeBoot,
@@ -22,6 +24,13 @@ public sealed partial class DeviceOwner
 
     private readonly DevicePolicyManager policyManager =
         (DevicePolicyManager)Application.Context.GetSystemService(Context.DevicePolicyService)!;
+
+    private readonly IPreferences preferences;
+
+    public DeviceOwner(IPreferences preferences)
+    {
+        this.preferences = preferences;
+    }
 
     public void Dispose() => policyManager.Dispose();
 
@@ -64,6 +73,7 @@ public sealed partial class DeviceOwner
         Application.Context.PackageManager!.SetComponentEnabledSetting(home, ComponentEnabledState.Enabled, ComponentEnableOption.DontKillApp);
         policyManager.AddPersistentPreferredActivity(admin, filter, home);
         policyManager.SetKeyguardDisabled(admin, true);
+        preferences.Set(PreviousStayOnKey, Android.Provider.Settings.Global.GetInt(Application.Context.ContentResolver, Android.Provider.Settings.Global.StayOnWhilePluggedIn, StayOnNever));
         policyManager.SetGlobalSetting(admin, Android.Provider.Settings.Global.StayOnWhilePluggedIn, StayOnPluggedIn.ToString(CultureInfo.InvariantCulture));
         foreach (var restriction in UserRestrictions)
         {
@@ -81,7 +91,8 @@ public sealed partial class DeviceOwner
         Application.Context.PackageManager!.SetComponentEnabledSetting(home, ComponentEnabledState.Default, ComponentEnableOption.DontKillApp);
         policyManager.ClearPackagePersistentPreferredActivities(admin, Application.Context.PackageName);
         policyManager.SetKeyguardDisabled(admin, false);
-        policyManager.SetGlobalSetting(admin, Android.Provider.Settings.Global.StayOnWhilePluggedIn, StayOnNever.ToString(CultureInfo.InvariantCulture));
+        policyManager.SetGlobalSetting(admin, Android.Provider.Settings.Global.StayOnWhilePluggedIn, preferences.Get(PreviousStayOnKey, StayOnNever).ToString(CultureInfo.InvariantCulture));
+        preferences.Remove(PreviousStayOnKey);
         foreach (var restriction in UserRestrictions)
         {
             policyManager.ClearUserRestriction(admin, restriction);

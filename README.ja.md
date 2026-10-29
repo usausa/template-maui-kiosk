@@ -2,7 +2,8 @@
 
 [English](README.md) | 日本語
 
-専用端末向けに、MDM から使われる、またはアプリ自身がデバイスオーナーになる簡易 MDM として動く、Android のキオスクアプリの MAUI のテンプレートプロジェクト。
+Android の専用端末向けのキオスクアプリの MAUI のテンプレート。  
+MDM から使うほか、アプリ自身がデバイスオーナーになる簡易 MDM としても動く。
 
 ## ✨ 主な機能
 
@@ -18,36 +19,36 @@
 
 | 画面 | ソース | 内容 |
 |---|---|---|
-| Menu | `Modules/Main/MenuView.xaml` | 管理対象の構成の知らせと、Status・Admin のボタン |
-| Status | `Modules/Kiosk/KioskStatusView.xaml` | デバイスオーナーか、ロックタスクの状態、ロックタスクの許可、管理対象の構成の値(MDM か既定値か)、版 |
-| Admin | `Modules/Kiosk/KioskAdminView.xaml` | ロックタスク(Start・Stop・Open settings)、端末の制限(Device policy の Apply・Clear・Reboot)、構成の試し(Test configuration の Send・Clear) |
+| Menu | `Modules/Main/MenuView.xaml` | 構成の知らせ、Status と Admin のボタン |
+| Status | `Modules/Kiosk/KioskStatusView.xaml` | デバイスオーナー、ロックタスク、構成の値、版 |
+| Admin | `Modules/Kiosk/KioskAdminView.xaml` | ロックタスク、端末の制限、再起動、構成の試し |
 
 ## 🧩 Android の技術
 
-画面と `MainActivity` が使う状態は `State/KioskState.cs` にまとめる。  
-Android の部分は `Components`(`.android.cs`)と `Platforms/Android` にある。  
-表の種別は、🧱 基盤 がほかのアプリへそのままコピーして使えるもの、📝 アプリ がアプリに合わせて直すもの。
+状態は `State/KioskState.cs` にまとめる。  
+種別: 🧱 そのままコピーして使える / 📝 アプリに合わせて直す
 
 ### 📋 管理対象の構成
 
-MDM がアプリの宣言した項目に値を設定し、アプリが読む。  
-MDM が設定したキーだけが返るので、既定値はアプリが持つ。  
-値は起動時と前面に戻った時に読み、変更は実行時に登録した受け手で受け取る。
+MDM が設定した値をアプリが読む。  
+設定されていないキーは返らないので、既定値はアプリが持つ。  
+参考: [Managed configurations](https://developer.android.com/work/managed-configurations)
 
-| ソース | 種別 | 内容 |
+| 種別 | ソース | 内容 |
 |---|---|---|
-| `Platforms/Android/Resources/xml/app_restrictions.xml` | 📝 アプリ | 項目の宣言(`<restrictions>`) |
-| `Platforms/Android/MainApplication.cs` | 🧱 基盤 | `android.content.APP_RESTRICTIONS` の meta-data |
-| `Components/ManagedConfiguration.cs` + `.android.cs` | 📝 アプリ | `RestrictionsManager.getApplicationRestrictions()` での読み取りと、`ACTION_APPLICATION_RESTRICTIONS_CHANGED` の受け取り(キーはアプリのもの) |
-| `State/KioskState.cs` | 📝 アプリ | 既定値 |
-| `MainPageViewModel.cs` | 📝 アプリ | `OnResumed` での読み直し |
+| 📝 | `Platforms/Android/Resources/xml/app_restrictions.xml` | 項目の宣言 |
+| 🧱 | `Platforms/Android/MainApplication.cs` | 宣言の登録(meta-data) |
+| 📝 | `Components/ManagedConfiguration.cs` | キーと読み直し |
+| 📝 | `Components/ManagedConfiguration.android.cs` | 読み取りと変更の受け取り |
+| 📝 | `State/KioskState.cs` | 既定値 |
+| 📝 | `MainPageViewModel.cs` | 前面に戻った時の読み直し(`OnResumed`) |
 
 | キー | 型 | 既定値 | 用途 |
 |---|---|---|---|
 | `AdminPin` | string | `0000` | 保守の画面の PIN |
-| `KeepScreenOn` | bool | `true` | ロックタスクの間、画面を点けたままにする |
+| `KeepScreenOn` | bool | `true` | ロックタスクの間、画面を点けたまま |
 | `HideSystemBars` | bool | `true` | ロックタスクの間、システムバーを隠す |
-| `Message` | string | | メニューに出す知らせ |
+| `Message` | string | | Menu に出す知らせ |
 
 ```xml
 <restriction android:key="AdminPin" android:title="Admin PIN" android:restrictionType="string" android:defaultValue="0000" />
@@ -63,15 +64,17 @@ var adminPin = bundle.ContainsKey(AdminPinKey) ? bundle.GetString(AdminPinKey) :
 
 ### 👑 デバイスオーナー
 
-アプリはデバイス管理の受け手を持ち、`dpm set-device-owner` でデバイスオーナーになる。  
-Debug のビルドはテスト用なので、`dpm remove-active-admin` でデバイスオーナーを外せる。
+デバイス管理の受け手を持ち、`dpm set-device-owner` でデバイスオーナーになる。  
+Debug のビルドは testOnly なので、`dpm remove-active-admin` で外せる。
 
-| ソース | 種別 | 内容 |
+| 種別 | ソース | 内容 |
 |---|---|---|
-| `Platforms/Android/KioskAdminReceiver.cs` | 🧱 基盤 | `DeviceAdminReceiver` |
-| `Platforms/Android/Resources/xml/device_admin.xml` | 🧱 基盤 | デバイス管理の方針(無し) |
-| `Components/DeviceOwner.cs` + `.android.cs` | 📝 アプリ | `DevicePolicyManager.isDeviceOwnerApp()` での判定と、アプリの端末の制限とキー |
-| `Platforms/Android/AndroidManifest.xml`、`Template.MobileApp.csproj` | 🧱 基盤 | Debug のビルドだけの `android:testOnly`(`AndroidManifestPlaceholders`) |
+| 🧱 | `Platforms/Android/KioskAdminReceiver.cs` | デバイス管理の受け手 |
+| 🧱 | `Platforms/Android/Resources/xml/device_admin.xml` | 使う方針(無し) |
+| 🧱 | `Platforms/Android/AndroidManifest.xml` | `android:testOnly` |
+| 🧱 | `Template.MobileApp.csproj` | Debug だけ testOnly |
+| 📝 | `Components/DeviceOwner.cs` | 公開する操作 |
+| 📝 | `Components/DeviceOwner.android.cs` | デバイスオーナーかの判定 |
 
 ```csharp
 [BroadcastReceiver(Name = "template.mobileapp.KioskAdminReceiver", Exported = true, Permission = "android.permission.BIND_DEVICE_ADMIN")]
@@ -88,17 +91,18 @@ public sealed class KioskAdminReceiver : DeviceAdminReceiver
 
 ### 🔒 ロックタスク
 
-デバイスオーナーか MDM が許可したアプリは起動でロックタスクに入り、HOME や最近のアプリでアプリから出られない。  
-許可が無い時の `startLockTask()` は画面の固定になり、利用者の確認で始まり、利用者が外せる。  
-状態は `ActivityManager` から読み、変わったことはデバイス管理の受け手で受け取る(画面の固定は状態を見に行く)。
+許可されたアプリは起動でロックタスクに入り、HOME や最近のアプリで出られない。  
+許可が無い時は画面の固定になる(利用者が確認して始め、外せる)。  
+参考: [Lock task mode](https://developer.android.com/work/dpc/dedicated-devices/lock-task-mode)
 
-| ソース | 種別 | 内容 |
+| 種別 | ソース | 内容 |
 |---|---|---|
-| `Platforms/Android/MainActivity.cs` | 🧱 基盤 | `[Activity]` の `LockTaskMode = "if_whitelisted"` と `SingleTask` |
-| `Components/LockTask.cs` + `.android.cs` | 🧱 基盤 | `Activity.startLockTask()` / `stopLockTask()`、`ActivityManager.getLockTaskModeState()`、`DevicePolicyManager.isLockTaskPermitted()`、止まるのを待つ(`StopAsync`) |
-| `Platforms/Android/KioskAdminReceiver.cs` | 🧱 基盤 | `onLockTaskModeEntering()` / `onLockTaskModeExiting()` |
-| `Components/DeviceOwner.android.cs` | 📝 アプリ | `DevicePolicyManager.setLockTaskPackages()` での許可 |
-| `Modules/Kiosk/KioskAdminViewModel.cs` | 📝 アプリ | Start と Stop |
+| 🧱 | `Platforms/Android/MainActivity.cs` | `LockTaskMode = "if_whitelisted"`・`SingleTask` |
+| 🧱 | `Platforms/Android/KioskAdminReceiver.cs` | 出入りの知らせ |
+| 🧱 | `Components/LockTask.cs` | 状態の見張り、止まるのを待つ(`StopAsync`) |
+| 🧱 | `Components/LockTask.android.cs` | `startLockTask()`・`stopLockTask()`・状態・許可 |
+| 📝 | `Components/DeviceOwner.android.cs` | 自分を許可(`setLockTaskPackages()`) |
+| 📝 | `Modules/Kiosk/KioskAdminViewModel.cs` | Start・Stop |
 
 ```csharp
 [Activity(LaunchMode = LaunchMode.SingleTask, LockTaskMode = "if_whitelisted", ...)]
@@ -110,13 +114,12 @@ ActivityResolver.CurrentActivity.StartLockTask();
 
 ### 📺 全画面と点灯
 
-ロックタスクの間は、システムバーを隠し、画面を点けたままにする。  
-スワイプでシステムバーが一時的に出る。  
-どちらも管理対象の構成に従う。
+ロックタスクの間、構成に従ってシステムバーを隠し、画面を点けたままにする。  
+システムバーはスワイプで一時的に出る。
 
-| ソース | 種別 | 内容 |
+| 種別 | ソース | 内容 |
 |---|---|---|
-| `Platforms/Android/MainActivity.cs`(`UpdateKioskWindow`) | 📝 アプリ | `KioskState` の状態に従った `WindowInsetsControllerCompat`(`BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE`)と `FLAG_KEEP_SCREEN_ON` |
+| 📝 | `Platforms/Android/MainActivity.cs` | 窓の切り替え(`UpdateKioskWindow`) |
 
 ```csharp
 window.AddFlags(WindowManagerFlags.KeepScreenOn);
@@ -126,15 +129,19 @@ controller.Hide(WindowInsetsCompat.Type.SystemBars());
 
 ### 🔑 保守の画面
 
-メニューの Admin は、管理対象の構成の PIN を入れた後に保守の画面を開く。  
-保守の画面では、保守のためにロックタスクを止め、Open settings で Android の設定を開く。
+Menu の Admin は、PIN を入れてから保守の画面を開く。  
+保守の画面でロックタスクを止め、Android の設定を開ける。
 
-| ソース | 種別 | 内容 |
+| 種別 | ソース | 内容 |
 |---|---|---|
-| `Modules/Main/MenuViewModel.cs` | 📝 アプリ | PIN の照合 |
-| `Modules/PopupNavigatorExtensions.cs`、`Modules/Navigation/Modal/InputNumberView.xaml` + `InputNumberViewModel.cs`、`Models/Input/` | 🧱 基盤 | 伏せ字の数字での PIN の入力(`InputPinAsync`) |
-| `Modules/Kiosk/KioskAdminView.xaml` + `KioskAdminViewModel.cs` | 📝 アプリ | 保守の画面 |
-| `Platforms/Android/AndroidHelper.cs` | 🧱 基盤 | `Settings.ACTION_SETTINGS` での Android の設定(`OpenSettings`) |
+| 📝 | `Modules/Main/MenuViewModel.cs` | PIN の照合 |
+| 🧱 | `Modules/PopupNavigatorExtensions.cs` | PIN の入力(`InputPinAsync`) |
+| 🧱 | `Modules/Navigation/Modal/InputNumberView.xaml` | 数字の入力のポップアップ |
+| 🧱 | `Modules/Navigation/Modal/InputNumberViewModel.cs` | 伏せ字、先頭の 0 を残す |
+| 🧱 | `Models/Input/` | 入力の値 |
+| 📝 | `Modules/Kiosk/KioskAdminView.xaml` | 保守の画面 |
+| 📝 | `Modules/Kiosk/KioskAdminViewModel.cs` | 保守の画面の操作 |
+| 🧱 | `Platforms/Android/AndroidHelper.cs` | 設定を開く(`OpenSettings`) |
 
 ```csharp
 var pin = await popupNavigator.InputPinAsync("Admin PIN", Length.AdminPin);
@@ -146,14 +153,15 @@ if (pin == Kiosk.AdminPin)
 
 ### 🏠 ホームアプリ
 
-`HomeActivity` は HOME の intent-filter を持ち、既定で無効なので、普通の端末ではホームアプリの候補に出ない。  
-デバイスオーナーが有効にしてホームアプリに固定するので、再起動の後にアプリが立ち上がる。  
-`HomeActivity` は `MainActivity` を開いて閉じるだけで、`MainActivity` は標準のタスクに 1 つのままになる。
+`HomeActivity` は HOME を受けて `MainActivity` を開くだけの中継で、既定では無効。  
+Apply で有効にしてホームに固定するので、再起動の後もアプリが立ち上がる。  
+`MainActivity` を直接ホームにしないのは、HOME で別のタスクにもう 1 つでき、常にホームの候補に出てしまうため。  
+既定で無効のホーム用の Activity を有効にして固定する形は、[Test DPC](https://github.com/googlesamples/android-testdpc) の `KioskModeActivity` と同じ。
 
-| ソース | 種別 | 内容 |
+| 種別 | ソース | 内容 |
 |---|---|---|
-| `Platforms/Android/HomeActivity.cs` | 🧱 基盤 | `ACTION_MAIN` + `CATEGORY_HOME` + `CATEGORY_DEFAULT`、既定で無効、`MainActivity` を開く |
-| `Components/DeviceOwner.android.cs` | 📝 アプリ | `PackageManager.setComponentEnabledSetting()`、`DevicePolicyManager.addPersistentPreferredActivity()` / `clearPackagePersistentPreferredActivities()` |
+| 🧱 | `Platforms/Android/HomeActivity.cs` | HOME の中継(既定で無効) |
+| 📝 | `Components/DeviceOwner.android.cs` | 有効にしてホームに固定 |
 
 ```csharp
 [Activity(Theme = "@android:style/Theme.NoDisplay", TaskAffinity = "", Enabled = false, Exported = true)]
@@ -166,25 +174,30 @@ policyManager.AddPersistentPreferredActivity(admin, filter, home);
 
 ### 📜 端末の制限
 
-保守の画面の Apply は、デバイスオーナーとして次を掛け、Clear は外す。
+Apply はデバイスオーナーとして次を掛け、Clear は外す。  
+参考: [Dedicated devices cookbook](https://developer.android.com/work/dpc/dedicated-devices/cookbook)
 
-| 制限 | Android |
-|---|---|
-| ロックタスクの許可 | `setLockTaskPackages()` |
-| ロックタスクの機能(システムの情報と電源メニューだけ) | `setLockTaskFeatures()` の `LOCK_TASK_FEATURE_SYSTEM_INFO`・`LOCK_TASK_FEATURE_GLOBAL_ACTIONS` |
-| ホームアプリ | `addPersistentPreferredActivity()` |
-| ロック画面の無効(PIN やパスワードが無い時だけ) | `setKeyguardDisabled()` |
-| 充電中の点灯 | `setGlobalSetting()` の `STAY_ON_WHILE_PLUGGED_IN` |
-| ユーザーの制限 | `addUserRestriction()` の `DISALLOW_SAFE_BOOT`・`DISALLOW_FACTORY_RESET`・`DISALLOW_ADD_USER`・`DISALLOW_MOUNT_PHYSICAL_MEDIA` |
-
-Clear はロックタスクが止まるのを待ち、ロックタスクの許可を先に外す。  
-Android 14 以降はロックタスクの機能の設定で許可が当て直され、許可を失ったロック中のタスクは閉じられる。
-
-| ソース | 種別 | 内容 |
+| 項目 | API | 値 |
 |---|---|---|
-| `Components/DeviceOwner.android.cs` | 📝 アプリ | 掛ける・外す端末の制限(`PlatformApplyPolicy`・`PlatformClearPolicy`) |
-| `Components/LockTask.cs` | 🧱 基盤 | ロックタスクが止まるのを待つ(`StopAsync`) |
-| `Modules/Kiosk/KioskAdminViewModel.cs` | 📝 アプリ | Apply と Clear |
+| ロックタスクの許可 | `setLockTaskPackages()` | このアプリ |
+| 時刻などの表示 | `setLockTaskFeatures()` | `LOCK_TASK_FEATURE_SYSTEM_INFO` |
+| 電源メニュー | `setLockTaskFeatures()` | `LOCK_TASK_FEATURE_GLOBAL_ACTIONS` |
+| ホームアプリ | `addPersistentPreferredActivity()` | `HomeActivity` |
+| ロック画面の無効(PIN 無し) | `setKeyguardDisabled()` | `true` |
+| 充電中は消灯しない | `setGlobalSetting()` | `STAY_ON_WHILE_PLUGGED_IN` |
+| セーフモードの禁止 | `addUserRestriction()` | `DISALLOW_SAFE_BOOT` |
+| 初期化の禁止 | `addUserRestriction()` | `DISALLOW_FACTORY_RESET` |
+| ユーザーの追加の禁止 | `addUserRestriction()` | `DISALLOW_ADD_USER` |
+| 外部メディアの禁止 | `addUserRestriction()` | `DISALLOW_MOUNT_PHYSICAL_MEDIA` |
+
+Clear はロックタスクが止まるのを待ち、許可を最初に外す(順を変えるとアプリが閉じられる)。  
+充電中の点灯は、Apply の前の値に戻す。
+
+| 種別 | ソース | 内容 |
+|---|---|---|
+| 📝 | `Components/DeviceOwner.android.cs` | `PlatformApplyPolicy`・`PlatformClearPolicy` |
+| 🧱 | `Components/LockTask.cs` | 止まるのを待つ(`StopAsync`) |
+| 📝 | `Modules/Kiosk/KioskAdminViewModel.cs` | Apply・Clear |
 
 ```csharp
 policyManager.SetLockTaskFeatures(admin, LockTaskFeatures.SystemInfo | LockTaskFeatures.GlobalActions);
@@ -194,12 +207,12 @@ policyManager.AddUserRestriction(admin, UserManager.DisallowFactoryReset);
 
 ### 🔌 再起動
 
-保守の画面の Reboot は、確認の後に端末を再起動する。
+Reboot は確認してから端末を再起動する。
 
-| ソース | 種別 | 内容 |
+| 種別 | ソース | 内容 |
 |---|---|---|
-| `Components/DeviceOwner.android.cs` | 📝 アプリ | `DevicePolicyManager.reboot()` |
-| `Modules/Kiosk/KioskAdminViewModel.cs` | 📝 アプリ | 確認と再起動 |
+| 📝 | `Components/DeviceOwner.android.cs` | 再起動(`reboot()`) |
+| 📝 | `Modules/Kiosk/KioskAdminViewModel.cs` | 確認 |
 
 ```csharp
 if (await dialog.ConfirmAsync("Reboot the device?"))
@@ -210,12 +223,12 @@ if (await dialog.ConfirmAsync("Reboot the device?"))
 
 ### 🧪 構成の試し
 
-デバイスオーナーが自分のアプリに管理対象の構成を設定し、MDM 無しで試す。
+デバイスオーナーが自分に構成を設定し、MDM 無しで試す。
 
-| ソース | 種別 | 内容 |
+| 種別 | ソース | 内容 |
 |---|---|---|
-| `Components/DeviceOwner.android.cs` | 📝 アプリ | `DevicePolicyManager.setApplicationRestrictions()`(`PlatformSendConfiguration`) |
-| `Modules/Kiosk/KioskAdminViewModel.cs` | 📝 アプリ | Send と Clear |
+| 📝 | `Components/DeviceOwner.android.cs` | 設定(`setApplicationRestrictions()`) |
+| 📝 | `Modules/Kiosk/KioskAdminViewModel.cs` | Send・Clear |
 
 ```csharp
 bundle.PutString(ManagedConfiguration.AdminPinKey, settings.AdminPin);
@@ -224,12 +237,12 @@ policyManager.SetApplicationRestrictions(admin, Application.Context.PackageName,
 
 ### 💾 バックアップ
 
-専用端末のアプリのデータは、バックアップも移行もしない。
+アプリのデータはバックアップも移行もしない。
 
-| ソース | 種別 | 内容 |
+| 種別 | ソース | 内容 |
 |---|---|---|
-| `Platforms/Android/AndroidManifest.xml` | 🧱 基盤 | `android:allowBackup="false"` と `android:dataExtractionRules` |
-| `Platforms/Android/Resources/xml/data_extraction_rules.xml` | 🧱 基盤 | クラウドのバックアップと端末間の移行から、すべての領域を外す |
+| 🧱 | `Platforms/Android/AndroidManifest.xml` | `allowBackup="false"`・`dataExtractionRules` |
+| 🧱 | `Platforms/Android/Resources/xml/data_extraction_rules.xml` | すべての領域を外す |
 
 ```xml
 <application android:allowBackup="false" android:dataExtractionRules="@xml/data_extraction_rules" ... />
@@ -239,39 +252,37 @@ policyManager.SetApplicationRestrictions(admin, Application.Context.PackageName,
 
 ### MDM から使う
 
-1. MDM がアプリを入れ、ロックタスク(キオスクモード)を許可し、管理対象の構成を設定する
-2. アプリは起動でロックタスクに入り、構成に従ってシステムバーを隠し、画面を点けたままにする
+1. MDM がアプリを入れ、ロックタスクを許可し、構成を設定する
+2. アプリは起動でロックタスクに入る
 3. 構成の変更はその場で反映する
 
 ### 簡易 MDM として使う
 
 1. アプリをデバイスオーナーにする
-2. 保守の画面の Apply で端末の制限を掛け、アプリをホームアプリに固定し、ロックタスクを始める
-3. 再起動の後、アプリはロック画面無しでロックタスクで立ち上がる
+2. Admin の Apply で端末を制限し、ロックタスクに入る
+3. 再起動の後もロックタスクで立ち上がる
 
 ### 保守
 
-1. メニューの Admin は PIN(既定は `0000`)の後に保守の画面を開く
-2. Stop でロックタスクを終え(デバイスオーナーなら許可も外す)、Open settings で Android の設定を開く
-3. Start でロックタスクに戻り、Clear で端末の制限を外す
+1. Menu の Admin で PIN(既定は `0000`)を入れる
+2. Stop でロックタスクを止め、Open settings で設定を開く
+3. Start で戻り、Clear で制限を外す
 
 ## 🔧 セットアップ
 
 ### デバイスオーナー
 
-アカウントがあると `dpm set-device-owner` は失敗するので、エミュレーターなどアカウントの無い端末を使う。  
-Debug のビルドを入れ、アプリをデバイスオーナーにする。
+アカウントの無い端末(エミュレーターなど)に Debug のビルドを入れ、次を実行する。
 
 ```
 adb shell dpm set-device-owner template.kioskapp/template.mobileapp.KioskAdminReceiver
 ```
 
-メニューの Admin を PIN `0000` で開き、Apply を押す。
+Menu の Admin を PIN `0000` で開き、Apply を押す。
 
 ### デバイスオーナーを外す
 
-デバイスオーナーを外す前に、保守の画面で Clear を押す。  
-端末の制限を掛けたまま外すと、アプリがホームアプリのまま残る。
+先に Admin で Clear を押す(掛けたまま外すと、ホームがアプリのまま残る)。
 
 ```
 adb shell dpm remove-active-admin template.kioskapp/template.mobileapp.KioskAdminReceiver
@@ -279,11 +290,8 @@ adb shell dpm remove-active-admin template.kioskapp/template.mobileapp.KioskAdmi
 
 ### MDM
 
-MDM にアプリを登録し、ロックタスクを許可し、管理対象の構成の表のキーを設定する。
+MDM にアプリを登録し、ロックタスクを許可して、構成のキーを設定する。
 
 ## 🔗 リンク
 
 - [template-maui](https://github.com/usausa/template-maui)
-- [Lock task mode](https://developer.android.com/work/dpc/dedicated-devices/lock-task-mode)
-- [Dedicated devices cookbook](https://developer.android.com/work/dpc/dedicated-devices/cookbook)
-- [Managed configurations](https://developer.android.com/work/managed-configurations)
