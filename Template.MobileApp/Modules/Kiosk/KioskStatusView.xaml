@@ -3,6 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:s="http://smart/maui"
              xmlns:shell="clr-namespace:Template.MobileApp.Shell"
+             xmlns:components="clr-namespace:Template.MobileApp.Components"
              xmlns:module="clr-namespace:Template.MobileApp.Modules.Kiosk"
              x:Class="Template.MobileApp.Modules.Kiosk.KioskStatusView"
              x:DataType="{x:Type module:KioskStatusViewModel}"
@@ -36,6 +37,11 @@
                 <Setter Property="Spacing" Value="8" />
             </Style>
 
+            <Style x:Key="StatusListStack"
+                   TargetType="VerticalStackLayout">
+                <Setter Property="Spacing" Value="8" />
+            </Style>
+
             <Style x:Key="StatusGroupLabel"
                    TargetType="Label"
                    BasedOn="{StaticResource GroupLabel}">
@@ -61,6 +67,12 @@
                 <Setter Property="FontSize" Value="14" />
                 <Setter Property="HorizontalTextAlignment" Value="End" />
                 <Setter Property="VerticalTextAlignment" Value="Center" />
+            </Style>
+
+            <Style x:Key="StatusNoteLabel"
+                   TargetType="Label"
+                   BasedOn="{StaticResource ValueLabel}">
+                <Setter Property="FontSize" Value="14" />
             </Style>
 
         </ResourceDictionary>
@@ -100,6 +112,15 @@
                        Style="{StaticResource StatusValueLabel}"
                        Text="{Binding Kiosk.IsLockTaskPermitted, Converter={StaticResource YesNoConverter}}" />
             </Grid>
+            <Grid Style="{StaticResource StatusRowGrid}"
+                  ColumnDefinitions="*,Auto">
+                <Label Grid.Column="0"
+                       Style="{StaticResource NameLabel}"
+                       Text="System update" />
+                <Label Grid.Column="1"
+                       Style="{StaticResource StatusValueLabel}"
+                       Text="{Binding Kiosk.AppliedSystemUpdateWindow, TargetNullValue='None'}" />
+            </Grid>
 
             <!-- Managed configuration -->
             <Label Style="{StaticResource StatusGroupLabel}"
@@ -138,6 +159,30 @@
                        Text="{Binding Kiosk.IsHideSystemBarsConfigured, Converter={StaticResource SourceConverter}}" />
             </Grid>
             <Grid Style="{StaticResource StatusRowGrid}"
+                  ColumnDefinitions="*,Auto,Auto">
+                <Label Grid.Column="0"
+                       Style="{StaticResource NameLabel}"
+                       Text="Update window" />
+                <Label Grid.Column="1"
+                       Style="{StaticResource StatusValueLabel}"
+                       Text="{Binding Kiosk.SystemUpdateWindow}" />
+                <Label Grid.Column="2"
+                       Style="{StaticResource StatusSourceLabel}"
+                       Text="{Binding Kiosk.IsSystemUpdateWindowConfigured, Converter={StaticResource SourceConverter}}" />
+            </Grid>
+            <Grid Style="{StaticResource StatusRowGrid}"
+                  ColumnDefinitions="*,Auto,Auto">
+                <Label Grid.Column="0"
+                       Style="{StaticResource NameLabel}"
+                       Text="Lock task apps" />
+                <Label Grid.Column="1"
+                       Style="{StaticResource StatusValueLabel}"
+                       Text="{Binding Kiosk.LockTaskPackages.Count}" />
+                <Label Grid.Column="2"
+                       Style="{StaticResource StatusSourceLabel}"
+                       Text="{Binding Kiosk.IsLockTaskPackagesConfigured, Converter={StaticResource SourceConverter}}" />
+            </Grid>
+            <Grid Style="{StaticResource StatusRowGrid}"
                   ColumnDefinitions="Auto,*">
                 <Label Grid.Column="0"
                        Style="{StaticResource NameLabel}"
@@ -146,6 +191,38 @@
                        Style="{StaticResource StatusValueLabel}"
                        Text="{Binding Kiosk.Message, TargetNullValue='-'}" />
             </Grid>
+
+            <!-- App feedback -->
+            <Label Style="{StaticResource StatusGroupLabel}"
+                   Text="App feedback" />
+            <VerticalStackLayout Style="{StaticResource StatusListStack}"
+                                 BindableLayout.ItemsSource="{Binding Kiosk.ReceivedStates}">
+                <BindableLayout.EmptyView>
+                    <Label Style="{StaticResource StatusNoteLabel}"
+                           Text="None" />
+                </BindableLayout.EmptyView>
+                <BindableLayout.ItemTemplate>
+                    <DataTemplate x:DataType="{x:Type components:AppState}">
+                        <Grid Style="{StaticResource StatusRowGrid}"
+                              RowDefinitions="Auto,Auto"
+                              ColumnDefinitions="*,Auto,Auto">
+                            <Label Grid.Row="0" Grid.Column="0"
+                                   Style="{StaticResource NameLabel}"
+                                   Text="{Binding Key}" />
+                            <Label Grid.Row="0" Grid.Column="1"
+                                   Style="{StaticResource StatusValueLabel}"
+                                   Text="{Binding Data}" />
+                            <Label Grid.Row="0" Grid.Column="2"
+                                   Style="{StaticResource StatusSourceLabel}"
+                                   Text="{Binding Severity}" />
+                            <Label Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3"
+                                   Style="{StaticResource StatusNoteLabel}"
+                                   IsVisible="{Binding Message, Converter={StaticResource NotEmptyConverter}}"
+                                   Text="{Binding Message}" />
+                        </Grid>
+                    </DataTemplate>
+                </BindableLayout.ItemTemplate>
+            </VerticalStackLayout>
 
             <!-- Application -->
             <Label Style="{StaticResource StatusGroupLabel}"

@@ -169,6 +169,25 @@
                            Text="{Binding Message}" />
                 </Grid>
                 <Grid Style="{StaticResource AdminRowGrid}"
+                      ColumnDefinitions="*,2*">
+                    <Label Grid.Column="0"
+                           Style="{StaticResource AdminNameLabel}"
+                           Text="Update window" />
+                    <Entry Grid.Column="1"
+                           Style="{StaticResource InputEntry}"
+                           Text="{Binding UpdateWindow}"
+                           MaxLength="{x:Static domain:Length.SystemUpdateWindow}" />
+                </Grid>
+                <Grid Style="{StaticResource AdminRowGrid}"
+                      ColumnDefinitions="*,2*">
+                    <Label Grid.Column="0"
+                           Style="{StaticResource AdminNameLabel}"
+                           Text="Lock task apps" />
+                    <Entry Grid.Column="1"
+                           Style="{StaticResource InputEntry}"
+                           Text="{Binding LockTaskPackages}" />
+                </Grid>
+                <Grid Style="{StaticResource AdminRowGrid}"
                       ColumnDefinitions="*,Auto">
                     <Label Grid.Column="0"
                            Style="{StaticResource AdminNameLabel}"

@@ -251,6 +251,7 @@ public static partial class MauiProgram
         services.AddSingleton<ManagedConfiguration>();
         services.AddSingleton<DeviceOwner>();
         services.AddSingleton<LockTask>();
+        services.AddSingleton<AppFeedback>();
 
         // Resource
         services.AddSingleton<ResourceDictionary>(static _ => Application.Current!.Resources);

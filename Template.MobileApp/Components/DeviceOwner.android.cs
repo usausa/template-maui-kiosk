@@ -40,6 +40,14 @@ public sealed partial class DeviceOwner
     private static ComponentName CreateHome() =>
         new(Application.Context, Java.Lang.Class.FromType(typeof(HomeActivity)));
 
+    private static string[] CreateLockTaskPackages(IEnumerable<string> lockTaskPackages) =>
+        [Application.Context.PackageName!, .. lockTaskPackages.Where(static x => x != Application.Context.PackageName)];
+
+    private static SystemUpdatePolicy? CreateSystemUpdatePolicy(SystemUpdateWindow systemUpdateWindow) =>
+        SystemUpdatePolicy.CreateWindowedInstallPolicy(
+            (int)systemUpdateWindow.Start.ToTimeSpan().TotalMinutes,
+            (int)systemUpdateWindow.End.ToTimeSpan().TotalMinutes);
+
     private partial bool ResolveDeviceOwner() =>
         policyManager.IsDeviceOwnerApp(Application.Context.PackageName);
 
@@ -54,21 +62,44 @@ public sealed partial class DeviceOwner
         return Application.Context.PackageManager!.GetComponentEnabledSetting(home) == ComponentEnabledState.Enabled;
     }
 
-    private partial void PlatformAllowLockTask(bool allow)
+    private partial SystemUpdateWindow? ResolveAppliedSystemUpdateWindow()
     {
-        using var admin = CreateAdmin();
-        policyManager.SetLockTaskPackages(admin, allow ? [Application.Context.PackageName!] : []);
+        using var policy = policyManager.SystemUpdatePolicy;
+        if ((policy is null) || (policy.PolicyType != SystemUpdatePolicyType.InstallWindowed))
+        {
+            return null;
+        }
+
+        return new SystemUpdateWindow(
+            TimeOnly.FromTimeSpan(TimeSpan.FromMinutes(policy.InstallWindowStart)),
+            TimeOnly.FromTimeSpan(TimeSpan.FromMinutes(policy.InstallWindowEnd)));
     }
 
-    private partial void PlatformApplyPolicy()
+    private partial bool ResolveLockTaskAllowed() =>
+        policyManager.IsLockTaskPermitted(Application.Context.PackageName);
+
+    private partial void PlatformAllowLockTask(IReadOnlyList<string> lockTaskPackages)
+    {
+        using var admin = CreateAdmin();
+        policyManager.SetLockTaskPackages(admin, CreateLockTaskPackages(lockTaskPackages));
+    }
+
+    private partial void PlatformDisallowLockTask()
+    {
+        using var admin = CreateAdmin();
+        policyManager.SetLockTaskPackages(admin, []);
+    }
+
+    private partial void PlatformApplyPolicy(SystemUpdateWindow systemUpdateWindow, IReadOnlyList<string> lockTaskPackages)
     {
         using var admin = CreateAdmin();
         using var home = CreateHome();
+        using var systemUpdatePolicy = CreateSystemUpdatePolicy(systemUpdateWindow);
         using var filter = new IntentFilter(Intent.ActionMain);
         filter.AddCategory(Intent.CategoryHome);
         filter.AddCategory(Intent.CategoryDefault);
 
-        policyManager.SetLockTaskPackages(admin, [Application.Context.PackageName!]);
+        policyManager.SetLockTaskPackages(admin, CreateLockTaskPackages(lockTaskPackages));
         policyManager.SetLockTaskFeatures(admin, LockTaskFeatures.SystemInfo | LockTaskFeatures.GlobalActions);
         Application.Context.PackageManager!.SetComponentEnabledSetting(home, ComponentEnabledState.Enabled, ComponentEnableOption.DontKillApp);
         policyManager.AddPersistentPreferredActivity(admin, filter, home);
@@ -79,6 +110,8 @@ public sealed partial class DeviceOwner
         {
             policyManager.AddUserRestriction(admin, restriction);
         }
+
+        policyManager.SetSystemUpdatePolicy(admin, systemUpdatePolicy);
     }
 
     private partial void PlatformClearPolicy()
@@ -97,12 +130,21 @@ public sealed partial class DeviceOwner
         {
             policyManager.ClearUserRestriction(admin, restriction);
         }
+
+        policyManager.SetSystemUpdatePolicy(admin, null);
     }
 
     private partial void PlatformReboot()
     {
         using var admin = CreateAdmin();
         policyManager.Reboot(admin);
+    }
+
+    private partial void PlatformSetSystemUpdateWindow(SystemUpdateWindow systemUpdateWindow)
+    {
+        using var admin = CreateAdmin();
+        using var systemUpdatePolicy = CreateSystemUpdatePolicy(systemUpdateWindow);
+        policyManager.SetSystemUpdatePolicy(admin, systemUpdatePolicy);
     }
 
     private partial void PlatformSendConfiguration(ManagedSettings settings)
@@ -127,6 +169,16 @@ public sealed partial class DeviceOwner
         if (settings.Message is not null)
         {
             bundle.PutString(ManagedConfiguration.MessageKey, settings.Message);
+        }
+
+        if (settings.SystemUpdateWindow is not null)
+        {
+            bundle.PutString(ManagedConfiguration.SystemUpdateWindowKey, settings.SystemUpdateWindow);
+        }
+
+        if (settings.LockTaskPackages is not null)
+        {
+            bundle.PutString(ManagedConfiguration.LockTaskPackagesKey, settings.LockTaskPackages);
         }
 
         policyManager.SetApplicationRestrictions(admin, Application.Context.PackageName, bundle);

@@ -4,4 +4,6 @@
 	<restriction android:key="KeepScreenOn" android:title="Keep screen on" android:restrictionType="bool" android:defaultValue="true" />
 	<restriction android:key="HideSystemBars" android:title="Hide system bars" android:restrictionType="bool" android:defaultValue="true" />
 	<restriction android:key="Message" android:title="Message" android:restrictionType="string" />
+	<restriction android:key="SystemUpdateWindow" android:title="System update window" android:restrictionType="string" android:defaultValue="02:00-04:00" />
+	<restriction android:key="LockTaskPackages" android:title="Lock task packages" android:restrictionType="string" />
 </restrictions>

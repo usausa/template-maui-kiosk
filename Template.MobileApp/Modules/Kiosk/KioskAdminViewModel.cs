@@ -27,6 +27,12 @@ public sealed partial class KioskAdminViewModel : AppViewModelBase
     public partial string Message { get; set; }
 
     [ObservableProperty]
+    public partial string UpdateWindow { get; set; }
+
+    [ObservableProperty]
+    public partial string LockTaskPackages { get; set; }
+
+    [ObservableProperty]
     public partial bool KeepScreenOn { get; set; }
 
     [ObservableProperty]
@@ -69,6 +75,8 @@ public sealed partial class KioskAdminViewModel : AppViewModelBase
 
         AdminPin = kiosk.IsAdminPinConfigured ? kiosk.AdminPin : string.Empty;
         Message = kiosk.Message ?? string.Empty;
+        UpdateWindow = kiosk.IsSystemUpdateWindowConfigured ? kiosk.SystemUpdateWindow.ToString() : string.Empty;
+        LockTaskPackages = kiosk.IsLockTaskPackagesConfigured ? String.Join(',', kiosk.LockTaskPackages) : string.Empty;
         KeepScreenOn = kiosk.KeepScreenOn;
         HideSystemBars = kiosk.HideSystemBars;
 
@@ -115,7 +123,7 @@ public sealed partial class KioskAdminViewModel : AppViewModelBase
     {
         if (Kiosk.IsDeviceOwner)
         {
-            deviceOwner.AllowLockTask(true);
+            deviceOwner.AllowLockTask(Kiosk.LockTaskPackages);
         }
 
         lockTask.Start();
@@ -125,7 +133,7 @@ public sealed partial class KioskAdminViewModel : AppViewModelBase
     {
         if (await lockTask.StopAsync() && Kiosk.IsDeviceOwner)
         {
-            deviceOwner.AllowLockTask(false);
+            deviceOwner.DisallowLockTask();
         }
     }
 
@@ -136,7 +144,7 @@ public sealed partial class KioskAdminViewModel : AppViewModelBase
             return;
         }
 
-        deviceOwner.ApplyPolicy();
+        deviceOwner.ApplyPolicy(Kiosk.SystemUpdateWindow, Kiosk.LockTaskPackages);
         Kiosk.RefreshPolicy();
         if (Kiosk.LockTaskState == LockTaskState.None)
         {
@@ -182,11 +190,19 @@ public sealed partial class KioskAdminViewModel : AppViewModelBase
             return;
         }
 
+        if (!String.IsNullOrEmpty(UpdateWindow) && !SystemUpdateWindow.TryParse(UpdateWindow, out _))
+        {
+            await dialog.InformationAsync("Update window must be HH:mm-HH:mm");
+            return;
+        }
+
         deviceOwner.SendConfiguration(new ManagedSettings(
             String.IsNullOrEmpty(AdminPin) ? null : AdminPin,
             KeepScreenOn,
             HideSystemBars,
-            String.IsNullOrEmpty(Message) ? null : Message));
+            String.IsNullOrEmpty(Message) ? null : Message,
+            String.IsNullOrEmpty(UpdateWindow) ? null : UpdateWindow,
+            String.IsNullOrWhiteSpace(LockTaskPackages) ? null : LockTaskPackages));
         await dialog.Toast("Configuration sent");
     }
 

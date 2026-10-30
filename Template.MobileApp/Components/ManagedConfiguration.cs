@@ -4,7 +4,9 @@ public sealed record ManagedSettings(
     string? AdminPin,
     bool? KeepScreenOn,
     bool? HideSystemBars,
-    string? Message);
+    string? Message,
+    string? SystemUpdateWindow,
+    string? LockTaskPackages);
 
 public sealed partial class ManagedConfiguration : IDisposable
 {
@@ -12,8 +14,10 @@ public sealed partial class ManagedConfiguration : IDisposable
     public const string KeepScreenOnKey = "KeepScreenOn";
     public const string HideSystemBarsKey = "HideSystemBars";
     public const string MessageKey = "Message";
+    public const string SystemUpdateWindowKey = "SystemUpdateWindow";
+    public const string LockTaskPackagesKey = "LockTaskPackages";
 
-    private static readonly ManagedSettings Empty = new(null, null, null, null);
+    private static readonly ManagedSettings Empty = new(null, null, null, null, null, null);
 
     private bool started;
 
@@ -57,6 +61,13 @@ public sealed partial class ManagedConfiguration : IDisposable
             Changed?.Invoke(this, EventArgs.Empty);
         }
     }
+
+    // ------------------------------------------------------------
+    // Value
+    // ------------------------------------------------------------
+
+    public static IReadOnlyList<string> ParseLockTaskPackages(string? value) =>
+        value?.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Distinct(StringComparer.Ordinal).ToList() ?? [];
 
     private partial ManagedSettings ReadSettings();
 

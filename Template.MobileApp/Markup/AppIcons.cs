@@ -11,6 +11,7 @@ public static class AppIcons
     //--------------------------------------------------------------------------------
 
     public static readonly FontImageSource AdminPanelSettings = Create(MaterialIcons.Admin_panel_settings, MenuSize, Colors.White);
+    public static readonly FontImageSource Apps = Create(MaterialIcons.Apps, MenuSize, Colors.White);
     public static readonly FontImageSource Info = Create(MaterialIcons.Info, MenuSize, Colors.White);
 
     //--------------------------------------------------------------------------------

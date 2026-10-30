@@ -13,6 +13,9 @@
     <File Path="Settings.XamlStyler" />
     <File Path="Template.MobileKioskApp.sln.DotSettings" />
   </Folder>
+  <Folder Name="/Tools/">
+    <Project Path="tools/Template.Tools.ProvisioningQr/Template.Tools.ProvisioningQr.csproj" />
+  </Folder>
   <Project Path="Template.MobileApp/Template.MobileApp.csproj" DefaultStartup="true">
     <Deploy />
   </Project>

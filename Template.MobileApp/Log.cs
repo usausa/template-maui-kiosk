@@ -20,8 +20,8 @@ internal static partial class Log
 
     // Kiosk
 
-    [LoggerMessage(Level = LogLevel.Debug, Message = "Managed configuration changed. adminPinConfigured=[{adminPinConfigured}], keepScreenOn=[{keepScreenOn}], hideSystemBars=[{hideSystemBars}], message=[{message}]")]
-    public static partial void DebugManagedConfiguration(this ILogger logger, bool adminPinConfigured, bool? keepScreenOn, bool? hideSystemBars, string? message);
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Managed configuration changed. adminPinConfigured=[{adminPinConfigured}], keepScreenOn=[{keepScreenOn}], hideSystemBars=[{hideSystemBars}], message=[{message}], systemUpdateWindow=[{systemUpdateWindow}], lockTaskPackages=[{lockTaskPackages}]")]
+    public static partial void DebugManagedConfiguration(this ILogger logger, bool adminPinConfigured, bool? keepScreenOn, bool? hideSystemBars, string? message, string? systemUpdateWindow, string? lockTaskPackages);
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Lock task state changed. state=[{state}], permitted=[{permitted}]")]
     public static partial void InfoLockTaskStateChanged(this ILogger logger, Components.LockTaskState state, bool permitted);
@@ -31,6 +31,18 @@ internal static partial class Log
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Reboot requested.")]
     public static partial void InfoRebootRequested(this ILogger logger);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Provisioning completed. applyPolicy=[{applyPolicy}]")]
+    public static partial void InfoProvisioningCompleted(this ILogger logger, bool applyPolicy);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "App states reported. count=[{count}]")]
+    public static partial void DebugAppStatesReported(this ILogger logger, int count);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "App states received. count=[{count}]")]
+    public static partial void DebugAppStatesReceived(this ILogger logger, int count);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "App launched. package=[{packageName}], launched=[{launched}]")]
+    public static partial void InfoAppLaunched(this ILogger logger, string packageName, bool launched);
 
     // Navigation
 

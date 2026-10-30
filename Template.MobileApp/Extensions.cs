@@ -135,5 +135,8 @@ public static class Extensions
 
     public static IObservable<EventArgs> ChangedAsObservable(this LockTask lockTask) =>
         Observable.FromEvent<EventHandler, EventArgs>(static h => (_, e) => h(e), h => lockTask.Changed += h, h => lockTask.Changed -= h);
+
+    public static IObservable<EventArgs> ReceivedAsObservable(this AppFeedback appFeedback) =>
+        Observable.FromEvent<EventHandler, EventArgs>(static h => (_, e) => h(e), h => appFeedback.Received += h, h => appFeedback.Received -= h);
 }
 #pragma warning restore CA1724
