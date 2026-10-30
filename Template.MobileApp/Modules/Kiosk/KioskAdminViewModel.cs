@@ -6,6 +6,8 @@ public sealed partial class KioskAdminViewModel : AppViewModelBase
 {
     // Field
 
+    private static readonly TimeSpan LockTaskPollInterval = TimeSpan.FromSeconds(1);
+
     private readonly ILogger<KioskAdminViewModel> log;
 
     private readonly IDialog dialog;
@@ -87,6 +89,8 @@ public sealed partial class KioskAdminViewModel : AppViewModelBase
         var policyAppliedChanged = Kiosk.AsObservable(nameof(KioskState.IsPolicyApplied));
         Observe(policyAppliedChanged, ApplyPolicyCommand);
         Observe(policyAppliedChanged, ClearPolicyCommand);
+
+        Disposables.Add(Observable.Interval(LockTaskPollInterval).ObserveOnCurrentContext().Subscribe(_ => Kiosk.RefreshLockTask()));
     }
 
     //--------------------------------------------------------------------------------
