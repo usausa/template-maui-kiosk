@@ -9,18 +9,23 @@ It is used from an MDM, or works as a simple MDM with the app as the device owne
 
 - Managed configurations
 - Lock task mode
+- Other apps during lock task mode
 - Admin screen with a PIN
 - Full screen during lock task mode
 - Device policy as the device owner
+- System update window
 - Home app
 - Reboot
+- App feedback to the MDM
+- Device owner setup with a QR code
 
 ## 📱 Screens
 
 | Screen | Source | Contents |
 |---|---|---|
-| Menu | `Modules/Main/MenuView.xaml` | Message from the configurations, and the Status and Admin buttons |
-| Status | `Modules/Kiosk/KioskStatusView.xaml` | Device owner, lock task, configuration values, and version |
+| Menu | `Modules/Main/MenuView.xaml` | Configuration message, and the Status, Apps, and Admin buttons |
+| Status | `Modules/Kiosk/KioskStatusView.xaml` | Device state, configuration values, app feedback, and version |
+| Apps | `Modules/Kiosk/KioskAppsView.xaml` | Buttons that open the allowed apps |
 | Admin | `Modules/Kiosk/KioskAdminView.xaml` | Lock task, device policy, reboot, and test configuration |
 
 ## 🧩 Android technologies
@@ -49,6 +54,8 @@ Reference: [Managed configurations](https://developer.android.com/work/managed-c
 | `KeepScreenOn` | bool | `true` | Keep the screen on during lock task mode |
 | `HideSystemBars` | bool | `true` | Hide the system bars during lock task mode |
 | `Message` | string | | Message on the menu |
+| `SystemUpdateWindow` | string | `02:00-04:00` | Window for automatic system updates |
+| `LockTaskPackages` | string | | Other apps in lock task mode (comma-separated) |
 
 ```xml
 <restriction android:key="AdminPin" android:title="Admin PIN" android:restrictionType="string" android:defaultValue="0000" />
@@ -89,6 +96,33 @@ public sealed class KioskAdminReceiver : DeviceAdminReceiver
 </PropertyGroup>
 ```
 
+### 📷 Setup with a QR code
+
+On a new or reset device, tapping the welcome screen six times opens the QR code reader, and the device installs the app as the device owner.  
+The app answers the fully managed mode (`GET_PROVISIONING_MODE`), and applies the admin extras at the end of the setup (`ADMIN_POLICY_COMPLIANCE`).  
+The admin extras take the configuration keys, and `ApplyPolicy` (`true` applies the device policy too).  
+`PROVISIONING_ALLOW_OFFLINE` continues the setup when the update of the device management app fails.  
+Reference: [Provision devices](https://developers.google.com/android/work/play/emm-api/prov-devices#qr_code_method)
+
+| Kind | Source | Contents |
+|---|---|---|
+| 🧱 | `Platforms/Android/ProvisioningModeActivity.cs` | Fully managed mode (`GET_PROVISIONING_MODE`) |
+| 🧱 | `Platforms/Android/PolicyComplianceActivity.cs` | Admin extras (`ADMIN_POLICY_COMPLIANCE`) |
+| 📝 | `Components/DeviceOwner.cs` | Configuration and policy (`CompleteProvisioning`) |
+| 📝 | `tools/Template.Tools.ProvisioningQr/appsettings.json` | Contents of the QR code |
+| 🧱 | `tools/Template.Tools.ProvisioningQr/Program.cs` | JSON and PNG of the QR code |
+
+```json
+{
+  "android.app.extra.PROVISIONING_DEVICE_ADMIN_COMPONENT_NAME": "template.kioskapp/template.mobileapp.KioskAdminReceiver",
+  "android.app.extra.PROVISIONING_DEVICE_ADMIN_PACKAGE_DOWNLOAD_LOCATION": "https://example.com/template.kioskapp-Signed.apk",
+  "android.app.extra.PROVISIONING_DEVICE_ADMIN_SIGNATURE_CHECKSUM": "0R5w9t-qEBPSxPSixummCJ0hoc3yB2ve4-5NWb7E7-s",
+  "android.app.extra.PROVISIONING_LEAVE_ALL_SYSTEM_APPS_ENABLED": true,
+  "android.app.extra.PROVISIONING_ALLOW_OFFLINE": true,
+  "android.app.extra.PROVISIONING_ADMIN_EXTRAS_BUNDLE": { "AdminPin": "1234", "ApplyPolicy": "true" }
+}
+```
+
 ### 🔒 Lock task mode
 
 An allowed app enters lock task mode at launch, and HOME and recent apps do not leave it.  
@@ -101,7 +135,7 @@ Reference: [Lock task mode](https://developer.android.com/work/dpc/dedicated-dev
 | 🧱 | `Platforms/Android/KioskAdminReceiver.cs` | Enter and exit notices |
 | 🧱 | `Components/LockTask.cs` | State watch, waiting for the stop (`StopAsync`) |
 | 🧱 | `Components/LockTask.android.cs` | `startLockTask()`, `stopLockTask()`, state, permission |
-| 📝 | `Components/DeviceOwner.android.cs` | Allowing itself (`setLockTaskPackages()`) |
+| 📝 | `Components/DeviceOwner.android.cs` | Allowing itself and other apps (`setLockTaskPackages()`) |
 | 📝 | `Modules/Kiosk/KioskAdminViewModel.cs` | Start, Stop |
 
 ```csharp
@@ -110,6 +144,29 @@ public sealed class MainActivity : MauiAppCompatActivity
 
 policyManager.SetLockTaskPackages(admin, [Application.Context.PackageName!]);
 ActivityResolver.CurrentActivity.StartLockTask();
+```
+
+### 📦 Other apps
+
+The apps in the `LockTaskPackages` configuration are allowed during lock task mode, as well as this app.  
+Apps on the menu opens them, and Back returns to the app.  
+Reading the labels of other apps needs `<queries>` for launcher apps.  
+Reference: [Package visibility filtering on Android](https://developer.android.com/training/package-visibility)
+
+| Kind | Source | Contents |
+|---|---|---|
+| 📝 | `Components/DeviceOwner.android.cs` | Allowing the apps (`setLockTaskPackages()`) |
+| 📝 | `Modules/Kiosk/KioskAppsView.xaml` | Apps screen |
+| 📝 | `Modules/Kiosk/KioskAppsViewModel.cs` | Allowed apps and launch |
+| 🧱 | `Platforms/Android/AndroidHelper.cs` | Label and launch (`FindAppLabel`, `LaunchApp`) |
+| 🧱 | `Platforms/Android/AndroidManifest.xml` | `<queries>` for launcher apps |
+
+```csharp
+policyManager.SetLockTaskPackages(admin, [Application.Context.PackageName!, .. lockTaskPackages]);
+
+using var intent = packageManager.GetLaunchIntentForPackage(packageName);
+intent.AddFlags(ActivityFlags.NewTask);
+Application.Context.StartActivity(intent);
 ```
 
 ### 📺 Full screen and keep screen on
@@ -179,7 +236,7 @@ Reference: [Dedicated devices cookbook](https://developer.android.com/work/dpc/d
 
 | Policy | API | Value |
 |---|---|---|
-| Lock task permission | `setLockTaskPackages()` | This app |
+| Lock task permission | `setLockTaskPackages()` | This app and other apps |
 | System info | `setLockTaskFeatures()` | `LOCK_TASK_FEATURE_SYSTEM_INFO` |
 | Power menu | `setLockTaskFeatures()` | `LOCK_TASK_FEATURE_GLOBAL_ACTIONS` |
 | Home app | `addPersistentPreferredActivity()` | `HomeActivity` |
@@ -189,6 +246,7 @@ Reference: [Dedicated devices cookbook](https://developer.android.com/work/dpc/d
 | No factory reset | `addUserRestriction()` | `DISALLOW_FACTORY_RESET` |
 | No new users | `addUserRestriction()` | `DISALLOW_ADD_USER` |
 | No external media | `addUserRestriction()` | `DISALLOW_MOUNT_PHYSICAL_MEDIA` |
+| System updates | `setSystemUpdatePolicy()` | Window from the configuration |
 
 Clear waits for lock task mode to stop, and removes the permission first (another order closes the app).  
 Screen on while charging goes back to the value before Apply.
@@ -203,6 +261,25 @@ Screen on while charging goes back to the value before Apply.
 policyManager.SetLockTaskFeatures(admin, LockTaskFeatures.SystemInfo | LockTaskFeatures.GlobalActions);
 policyManager.SetKeyguardDisabled(admin, true);
 policyManager.AddUserRestriction(admin, UserManager.DisallowFactoryReset);
+```
+
+### 🕑 System update window
+
+Apply limits automatic system updates to a daily window from the `SystemUpdateWindow` configuration (`HH:mm-HH:mm`, `02:00-04:00` by default).  
+A configuration change while the policy is applied sets the new window, and Clear removes it.  
+The window is in minutes from midnight (`120` to `240`), and a start after the end spans midnight.  
+Reference: [Manage system updates](https://developer.android.com/work/dpc/system-updates)
+
+| Kind | Source | Contents |
+|---|---|---|
+| 🧱 | `Components/SystemUpdateWindow.cs` | Window (`HH:mm-HH:mm`) |
+| 📝 | `Components/DeviceOwner.cs` | Setting it again on a configuration change |
+| 📝 | `Components/DeviceOwner.android.cs` | Setting and reading the policy |
+| 📝 | `Modules/Kiosk/KioskStatusView.xaml` | Current policy (System update) |
+
+```csharp
+using var policy = SystemUpdatePolicy.CreateWindowedInstallPolicy(120, 240);
+policyManager.SetSystemUpdatePolicy(admin, policy);
 ```
 
 ### 🔌 Reboot
@@ -235,6 +312,35 @@ bundle.PutString(ManagedConfiguration.AdminPinKey, settings.AdminPin);
 policyManager.SetApplicationRestrictions(admin, Application.Context.PackageName, bundle);
 ```
 
+### 📨 App feedback
+
+The app reports its states to the MDM as keyed app states, at launch and when they change.  
+As a simple MDM, the app also receives them as the device owner, and Status shows the last ones.  
+Reference: [Send app feedback to EMMs](https://developer.android.com/work/app-feedback/overview)
+
+| Key | Severity | Contents |
+|---|---|---|
+| `LockTask` | Info | `None`, `Locked`, or `Pinned` |
+| `DevicePolicy` | Info | `Applied` or `NotApplied` |
+| `AdminPin` | Info / Error | Error when the PIN is not digits |
+| `SystemUpdateWindow` | Info / Error | Error when it is not `HH:mm-HH:mm` |
+
+| Kind | Source | Contents |
+|---|---|---|
+| 🧱 | `Template.MobileApp.csproj` | `Xamarin.AndroidX.Enterprise.Feedback` |
+| 🧱 | `Components/AppFeedback.cs` | States, report, and receive |
+| 🧱 | `Components/AppFeedback.android.cs` | Report (`KeyedAppStatesReporter`) |
+| 🧱 | `Platforms/Android/KioskAppStatesService.cs` | Receiving (`KeyedAppStatesService`) |
+| 📝 | `State/KioskState.cs` | States to report |
+
+```csharp
+reporter.SetStates(keyedStates, null);
+
+[Service(Name = "template.mobileapp.KioskAppStatesService", Exported = true)]
+[IntentFilter(["androidx.enterprise.feedback.action.APP_STATES"])]
+public sealed class KioskAppStatesService : KeyedAppStatesService
+```
+
 ### 💾 Backup
 
 The app data is not backed up or transferred.
@@ -253,14 +359,16 @@ The app data is not backed up or transferred.
 ### Used from an MDM
 
 1. The MDM installs the app, allows lock task mode, and sets the configurations
-2. The app enters lock task mode at launch
+2. The app enters lock task mode in full screen at launch
 3. Configuration changes are applied right away
+4. The app reports its states to the MDM
 
 ### As a simple MDM
 
-1. Set the app as the device owner
-2. Apply on the admin screen sets the device policy, and enters lock task mode
+1. Set the app as the device owner with a QR code (or `dpm` on a test device)
+2. Apply on the admin screen sets the device policy, and enters lock task mode in full screen
 3. After a reboot, the app starts in lock task mode
+4. Apps on the menu opens the allowed apps
 
 ### Maintenance
 
@@ -279,6 +387,19 @@ adb shell dpm set-device-owner template.kioskapp/template.mobileapp.KioskAdminRe
 ```
 
 Open Admin on the menu with the PIN `0000`, and press Apply.
+
+### QR code
+
+Set the APK URL, the SHA-256 of the signing certificate (`keytool -list -v`), and the admin extras in `tools/Template.Tools.ProvisioningQr/appsettings.json`, and run the tool.  
+The tool writes `provisioning.json` and `provisioning.png`, and the values can also be given on the command line.  
+Use the signed Release build.
+
+```
+dotnet run --project tools/Template.Tools.ProvisioningQr -- --Provisioning:DownloadLocation=https://example.com/app.apk
+```
+
+On a new or reset device, tap the welcome screen six times, and read the QR code.  
+The Release build cannot be removed with `dpm remove-active-admin`, so reset the device to set it up again.
 
 ### Removing the device owner
 
