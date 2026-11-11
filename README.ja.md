@@ -18,15 +18,23 @@ MDM から使うほか、アプリ自身がデバイスオーナーになる簡�
 - 再起動
 - MDM への状態の報告
 - QR コードでのデバイスオーナーの設定
+- アプリ自身の更新
+- ステータスバーの無効とアプリを隠す
+- 権限の自動の許可
+- ロック画面とサポートの文
+- PIN の誤りの後の待ち
 
 ## 📱 画面
 
 | 画面 | ソース | 内容 |
 |---|---|---|
-| Menu | `Modules/Main/MenuView.xaml` | 構成の知らせ、Status・Apps・Admin のボタン |
+| Menu | `Modules/Main/MenuView.xaml` | 構成の知らせ、各画面のボタン、Reboot |
 | Status | `Modules/Kiosk/KioskStatusView.xaml` | 端末の状態、構成の値、状態の報告、版 |
 | Apps | `Modules/Kiosk/KioskAppsView.xaml` | 許可したアプリを開くボタン |
-| Admin | `Modules/Kiosk/KioskAdminView.xaml` | ロックタスク、端末の制限、再起動、構成の試し |
+| Lock task | `Modules/Kiosk/KioskLockTaskView.xaml` | ロックタスクの状態、Start・Stop・Open settings |
+| Device policy | `Modules/Kiosk/KioskPolicyView.xaml` | 端末の制限の状態、Apply・Clear |
+| App update | `Modules/Kiosk/KioskUpdateView.xaml` | 版、Update |
+| Test configuration | `Modules/Kiosk/KioskConfigurationView.xaml` | 構成の値、Send・Clear |
 
 ## 🧩 Android の技術
 
@@ -56,6 +64,9 @@ MDM が設定した値をアプリが読む。
 | `Message` | string | | Menu に出す知らせ |
 | `SystemUpdateWindow` | string | `02:00-04:00` | 自動のシステムの更新の時間帯 |
 | `LockTaskPackages` | string | | ロックタスクの間のほかのアプリ(カンマ区切り) |
+| `UpdateLocation` | string | | アプリの更新の APK の URL |
+| `LockScreenInfo` | string | | ロック画面に出す文 |
+| `SupportMessage` | string | | 制限で止めた操作に出す文 |
 
 ```xml
 <restriction android:key="AdminPin" android:title="Admin PIN" android:restrictionType="string" android:defaultValue="0000" />
@@ -136,7 +147,7 @@ public sealed class KioskAdminReceiver : DeviceAdminReceiver
 | 🧱 | `Components/LockTask.cs` | 状態の見張り、止まるのを待つ(`StopAsync`) |
 | 🧱 | `Components/LockTask.android.cs` | `startLockTask()`・`stopLockTask()`・状態・許可 |
 | 📝 | `Components/DeviceOwner.android.cs` | 自分とほかのアプリを許可(`setLockTaskPackages()`) |
-| 📝 | `Modules/Kiosk/KioskAdminViewModel.cs` | Start・Stop |
+| 📝 | `Modules/Kiosk/KioskLockTaskViewModel.cs` | Start・Stop |
 
 ```csharp
 [Activity(LaunchMode = LaunchMode.SingleTask, LockTaskMode = "if_whitelisted", ...)]
@@ -186,25 +197,30 @@ controller.Hide(WindowInsetsCompat.Type.SystemBars());
 
 ### 🔑 保守の画面
 
-Menu の Admin は、PIN を入れてから保守の画面を開く。  
-保守の画面でロックタスクを止め、Android の設定を開ける。
+Menu の Lock task・Device policy・App update・Test configuration は PIN を入れてから開き、Reboot も PIN を求める。  
+Lock task でロックタスクを止め、Android の設定を開ける。  
+デバイスオーナーでない時は、Lock task 以外のボタンを押せない。  
+PIN を 5 回続けて誤ると 30 秒待たせ、数はアプリを開き直しても残る。
 
 | 種別 | ソース | 内容 |
 |---|---|---|
-| 📝 | `Modules/Main/MenuViewModel.cs` | PIN の照合 |
+| 📝 | `Modules/Main/MenuView.xaml` | 保守の画面のボタン |
+| 📝 | `Modules/Main/MenuViewModel.cs` | PIN の照合、誤りの後の待ち |
 | 🧱 | `Modules/PopupNavigatorExtensions.cs` | PIN の入力(`InputPinAsync`) |
 | 🧱 | `Modules/Navigation/Modal/InputNumberView.xaml` | 数字の入力のポップアップ |
 | 🧱 | `Modules/Navigation/Modal/InputNumberViewModel.cs` | 伏せ字、先頭の 0 を残す |
 | 🧱 | `Models/Input/` | 入力の値 |
-| 📝 | `Modules/Kiosk/KioskAdminView.xaml` | 保守の画面 |
-| 📝 | `Modules/Kiosk/KioskAdminViewModel.cs` | 保守の画面の操作 |
 | 🧱 | `Platforms/Android/AndroidHelper.cs` | 設定を開く(`OpenSettings`) |
+
+```xml
+<Button Command="{Binding AdminCommand}" CommandParameter="{markup:ViewId KioskPolicy}" IsEnabled="{Binding Kiosk.IsDeviceOwner}" Text="Device policy" />
+```
 
 ```csharp
 var pin = await popupNavigator.InputPinAsync("Admin PIN", Length.AdminPin);
 if (pin == Kiosk.AdminPin)
 {
-    await Navigator.ForwardAsync(ViewId.KioskAdmin);
+    await Navigator.ForwardAsync(id);
 }
 ```
 
@@ -247,20 +263,31 @@ Apply はデバイスオーナーとして次を掛け、Clear は外す。
 | ユーザーの追加の禁止 | `addUserRestriction()` | `DISALLOW_ADD_USER` |
 | 外部メディアの禁止 | `addUserRestriction()` | `DISALLOW_MOUNT_PHYSICAL_MEDIA` |
 | システムの更新 | `setSystemUpdatePolicy()` | 構成の時間帯 |
+| ステータスバーの無効 | `setStatusBarDisabled()` | `true` |
+| アプリを隠す | `setApplicationHidden()` | このアプリ・ほかのアプリ・設定を除く、ランチャーとホームのアプリ |
+| 権限の自動の許可 | `setPermissionPolicy()` | `PERMISSION_POLICY_AUTO_GRANT` |
 
 Clear はロックタスクが止まるのを待ち、許可を最初に外す(順を変えるとアプリが閉じられる)。  
-充電中の点灯は、Apply の前の値に戻す。
+充電中の点灯は、Apply の前の値に戻す。  
+ステータスバーの無効はロックタスクの外(保守とアプリの更新の間)で効き、通知の欄とクイック設定が開かない。  
+隠したアプリはデータが残り、Clear で戻る(方針を掛けている間に構成が変わると隠し直す)。  
+アプリが求める権限はダイアログ無しで許可され、Clear の後も許可のまま管理者の固定で残る。
 
 | 種別 | ソース | 内容 |
 |---|---|---|
 | 📝 | `Components/DeviceOwner.android.cs` | `PlatformApplyPolicy`・`PlatformClearPolicy` |
+| 📝 | `Components/DeviceOwner.cs` | 構成が変わった時に隠し直す |
 | 🧱 | `Components/LockTask.cs` | 止まるのを待つ(`StopAsync`) |
-| 📝 | `Modules/Kiosk/KioskAdminViewModel.cs` | Apply・Clear |
+| 📝 | `Modules/Kiosk/KioskPolicyViewModel.cs` | Apply・Clear |
+| 🧱 | `Platforms/Android/AndroidManifest.xml` | ホームのアプリと設定の `<queries>` |
 
 ```csharp
 policyManager.SetLockTaskFeatures(admin, LockTaskFeatures.SystemInfo | LockTaskFeatures.GlobalActions);
 policyManager.SetKeyguardDisabled(admin, true);
 policyManager.AddUserRestriction(admin, UserManager.DisallowFactoryReset);
+policyManager.SetStatusBarDisabled(admin, true);
+policyManager.SetApplicationHidden(admin, packageName, true);
+policyManager.SetPermissionPolicy(admin, PermissionPolicy.AutoGrant);
 ```
 
 ### 🕑 システムの更新の時間帯
@@ -282,20 +309,64 @@ using var policy = SystemUpdatePolicy.CreateWindowedInstallPolicy(120, 240);
 policyManager.SetSystemUpdatePolicy(admin, policy);
 ```
 
+### 🪪 ロック画面とサポートの文
+
+デバイスオーナーは、構成の `LockScreenInfo` をロック画面に、構成の `SupportMessage` を制限で止めた操作(設定の初期化など)に出す。  
+デバイスオーナーが構成を配る時に Apply とは別に設定し、キーが無ければ外す。  
+方針を掛けている間はロック画面が出ない(ロック画面の無効)ので、ロック画面の文は Clear の後に見える。
+
+| 種別 | ソース | 内容 |
+|---|---|---|
+| 📝 | `Components/DeviceOwner.cs` | 構成と一緒に設定 |
+| 📝 | `Components/DeviceOwner.android.cs` | 設定(`PlatformSetMessages`) |
+| 📝 | `Modules/Kiosk/KioskStatusView.xaml` | 構成の値 |
+
+```csharp
+policyManager.SetDeviceOwnerLockScreenInfo(admin, lockScreenInfo);
+policyManager.SetShortSupportMessage(admin, supportMessage);
+```
+
 ### 🔌 再起動
 
-Reboot は確認してから端末を再起動する。
+Menu の Reboot は、PIN と確認の後に端末を再起動する。
 
 | 種別 | ソース | 内容 |
 |---|---|---|
 | 📝 | `Components/DeviceOwner.android.cs` | 再起動(`reboot()`) |
-| 📝 | `Modules/Kiosk/KioskAdminViewModel.cs` | 確認 |
+| 📝 | `Modules/Main/MenuViewModel.cs` | PIN と確認 |
 
 ```csharp
 if (await dialog.ConfirmAsync("Reboot the device?"))
 {
     deviceOwner.Reboot();
 }
+```
+
+### ⬆️ アプリの更新
+
+App update の Update は、構成の `UpdateLocation` の APK を落とし、このアプリでバージョンコードが大きい時に入れる。  
+デバイスオーナーなので確認なしで入り、システムが管理者による更新を知らせる。  
+インストールでアプリが止まり、`ACTION_MY_PACKAGE_REPLACED` でロックタスクのアプリを開き直す。  
+待ち表示はアプリが止まるまで出し続け、インストールに失敗すると Update failed を出す。  
+方針を掛けている間は、ほかのホームアプリを隠すので、インストールの間にほかのものは開かない。  
+APK は同じ署名で、URL は HTTPS にする(平文の HTTP は許していない)。  
+参考: [Install app packages](https://developer.android.com/work/dpc/dedicated-devices/cookbook#install_app_packages)
+
+| 種別 | ソース | 内容 |
+|---|---|---|
+| 🧱 | `Components/AppUpdater.cs` | ダウンロード、インストールの待ち |
+| 🧱 | `Components/AppUpdater.android.cs` | パッケージの確かめとインストール(`PackageInstaller`) |
+| 🧱 | `Platforms/Android/AppUpdateReceiver.cs` | インストールの結果、アプリを開き直す |
+| 📝 | `Modules/Kiosk/KioskUpdateViewModel.cs` | Update |
+
+```csharp
+using var parameters = new PackageInstaller.SessionParams(PackageInstallMode.FullInstall);
+parameters.SetAppPackageName(Application.Context.PackageName);
+var sessionId = installer.CreateSession(parameters);
+session.Commit(pendingIntent.IntentSender);
+
+[IntentFilter([Intent.ActionMyPackageReplaced])]
+public sealed class AppUpdateReceiver : BroadcastReceiver
 ```
 
 ### 🧪 構成の試し
@@ -305,7 +376,7 @@ if (await dialog.ConfirmAsync("Reboot the device?"))
 | 種別 | ソース | 内容 |
 |---|---|---|
 | 📝 | `Components/DeviceOwner.android.cs` | 設定(`setApplicationRestrictions()`) |
-| 📝 | `Modules/Kiosk/KioskAdminViewModel.cs` | Send・Clear |
+| 📝 | `Modules/Kiosk/KioskConfigurationViewModel.cs` | Send・Clear |
 
 ```csharp
 bundle.PutString(ManagedConfiguration.AdminPinKey, settings.AdminPin);
@@ -366,31 +437,44 @@ public sealed class KioskAppStatesService : KeyedAppStatesService
 ### 簡易 MDM として使う
 
 1. QR コード(試しの端末では `dpm`)でアプリをデバイスオーナーにする
-2. Admin の Apply で端末を制限し、全画面のロックタスクに入る
+2. Device policy の Apply で端末を制限し、全画面のロックタスクに入る
 3. 再起動の後もロックタスクで立ち上がる
 4. Menu の Apps から、許可したアプリを開く
 
 ### 保守
 
-1. Menu の Admin で PIN(既定は `0000`)を入れる
-2. Stop でロックタスクを止め、Open settings で設定を開く
-3. Start で戻り、Clear で制限を外す
+1. Menu の保守の画面は PIN(既定は `0000`)を求める
+2. Lock task の Stop でロックタスクを止め、Open settings で設定を開く
+3. Start で戻り、Device policy の Clear で制限を外す
+4. App update の Update で構成の `UpdateLocation` からアプリを更新する
 
 ## 🔧 セットアップ
 
+全画面とほかのアプリへの切り替えの禁止は、ロックタスクの間に効く。  
+システムバーを隠すことと画面を点けたままにすることは、既定で有効(`HideSystemBars`・`KeepScreenOn`)。  
+ほかのアプリは `LockTaskPackages` のものだけを、Menu の Apps から開ける。  
+試しの端末のデバイスオーナー・QR コード・MDM のどれかで設定する。
+
 ### デバイスオーナー
 
-アカウントの無い端末(エミュレーターなど)に Debug のビルドを入れ、次を実行する。
+アカウントの無い端末(エミュレーターなど)に Debug のビルドを入れ、アプリをデバイスオーナーにする。
+
+```
+dotnet build Template.MobileApp/Template.MobileApp.csproj -c Debug -f net10.0-android -t:Install
+```
 
 ```
 adb shell dpm set-device-owner template.kioskapp/template.mobileapp.KioskAdminReceiver
 ```
 
-Menu の Admin を PIN `0000` で開き、Apply を押す。
+Menu の Device policy を PIN `0000` で開き、Apply を押す。  
+全画面のロックタスクに入り、HOME と履歴ではアプリから出られず、ステータスバーも引き出せなくなる。  
+ほかのランチャーは隠れ、アプリがホームになるので、再起動の後もロックタスクで立ち上がる。
 
 ### QR コード
 
 `tools/Template.Tools.ProvisioningQr/appsettings.json` に APK の場所・署名の証明書の SHA-256(`keytool -list -v`)・管理者の追加情報を入れ、ツールを実行する。  
+管理者の追加情報の `"ApplyPolicy": "true"` は、設定の終わりに Apply と同じ制限を掛ける。  
 ツールは `provisioning.json` と `provisioning.png` を書き、値はコマンドラインでも渡せる。  
 署名した Release のビルドを使う。
 
@@ -399,11 +483,21 @@ dotnet run --project tools/Template.Tools.ProvisioningQr -- --Provisioning:Downl
 ```
 
 新しい端末か初期化した端末で、ようこそ画面を 6 回押し、QR コードを読ませる。  
+設定が終わると、アプリがホームとして全画面のロックタスクで立ち上がる。  
 Release のビルドは `dpm remove-active-admin` で外せないので、設定し直す時は端末を初期化する。
+
+### アプリの更新
+
+`ApplicationVersion` を大きくして署名した Release のビルドを差分でなく作り直し、APK を HTTPS のサーバーに置いて、その URL を構成の `UpdateLocation` に設定する。  
+起動しないアプリを配るとキオスクが止まるので、サーバーに置く前に試しの端末で起動を確かめる。
+
+```
+dotnet build Template.MobileApp/Template.MobileApp.csproj -c Release -f net10.0-android --no-incremental -p:ApplicationVersion=2 -p:ApplicationDisplayVersion=1.1
+```
 
 ### デバイスオーナーを外す
 
-先に Admin で Clear を押す(掛けたまま外すと、ホームがアプリのまま残る)。
+先に Device policy で Clear を押す(掛けたまま外すと、ホームがアプリのまま残る)。
 
 ```
 adb shell dpm remove-active-admin template.kioskapp/template.mobileapp.KioskAdminReceiver
@@ -411,8 +505,37 @@ adb shell dpm remove-active-admin template.kioskapp/template.mobileapp.KioskAdmi
 
 ### MDM
 
-MDM にアプリを登録し、ロックタスクを許可して、構成のキーを設定する。
+MDM にアプリを登録し、ロックタスクを許可して、構成のキーを設定する。  
+アプリは起動で全画面のロックタスクに入る。  
+HOME や履歴が効くかは、MDM のロックタスクの設定で決まる。
 
-## 🔗 リンク
+## 📚 手順書
 
-- [template-maui](https://github.com/usausa/template-maui)
+`docs` の手順書(日本語)に、トピックごとに実現することと、エミュレーターでの確かめ方を順に書いてある。  
+エミュレーターでの確かめに使う道具は `tools/emulator` にある。
+
+| 手順書 | 内容 |
+|---|---|
+| [overview.md](docs/overview.md) | Device Policy とは(最初に読む) |
+| [emulator.md](docs/emulator.md) | エミュレーターの準備(確かめの前に行う) |
+| [managed-configuration.md](docs/managed-configuration.md) | 管理対象の構成 |
+| [lock-task.md](docs/lock-task.md) | ロックタスク・全画面・画面の固定 |
+| [device-policy.md](docs/device-policy.md) | 端末の制限・ホームアプリ・再起動 |
+| [status-bar-and-hidden-apps.md](docs/status-bar-and-hidden-apps.md) | ステータスバーの無効とアプリを隠す |
+| [permissions.md](docs/permissions.md) | 権限の自動の許可 |
+| [other-apps.md](docs/other-apps.md) | ロックタスクの間のほかのアプリ |
+| [system-update.md](docs/system-update.md) | システムの更新の時間帯 |
+| [app-feedback.md](docs/app-feedback.md) | MDM への状態の報告 |
+| [lock-screen-messages.md](docs/lock-screen-messages.md) | ロック画面とサポートの文 |
+| [admin-pin.md](docs/admin-pin.md) | 保守の画面と PIN |
+| [qr-provisioning.md](docs/qr-provisioning.md) | QR コードでのデバイスオーナーの設定 |
+| [app-update.md](docs/app-update.md) | アプリ自身の更新 |
+
+## 🔗 関連プロジェクト
+
+| プロジェクト | 説明 |
+| --- | --- |
+| [template-maui](https://github.com/usausa/template-maui) | MAUI アプリのテンプレート |
+| [template-maui-blazor](https://github.com/usausa/template-maui-blazor) | Blazor ベースのアプリのテンプレート |
+| [template-maui-keyboard](https://github.com/usausa/template-maui-keyboard) | 物理キー操作の見本 |
+| [template-maui-server](https://github.com/usausa/template-maui-server) | サーバーアプリのテンプレート |

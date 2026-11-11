@@ -191,6 +191,24 @@
                        Style="{StaticResource StatusValueLabel}"
                        Text="{Binding Kiosk.Message, TargetNullValue='-'}" />
             </Grid>
+            <Grid Style="{StaticResource StatusRowGrid}"
+                  ColumnDefinitions="Auto,*">
+                <Label Grid.Column="0"
+                       Style="{StaticResource NameLabel}"
+                       Text="Lock screen info" />
+                <Label Grid.Column="1"
+                       Style="{StaticResource StatusValueLabel}"
+                       Text="{Binding Kiosk.LockScreenInfo, TargetNullValue='-'}" />
+            </Grid>
+            <Grid Style="{StaticResource StatusRowGrid}"
+                  ColumnDefinitions="Auto,*">
+                <Label Grid.Column="0"
+                       Style="{StaticResource NameLabel}"
+                       Text="Support message" />
+                <Label Grid.Column="1"
+                       Style="{StaticResource StatusValueLabel}"
+                       Text="{Binding Kiosk.SupportMessage, TargetNullValue='-'}" />
+            </Grid>
 
             <!-- App feedback -->
             <Label Style="{StaticResource StatusGroupLabel}"

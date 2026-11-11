@@ -14,6 +14,8 @@ public sealed partial class DeviceOwner
 
     private const string PreviousStayOnKey = "PreviousStayOnWhilePluggedIn";
 
+    private const string HiddenPackagesKey = "HiddenPackages";
+
     private static readonly string[] UserRestrictions =
     [
         UserManager.DisallowSafeBoot,
@@ -48,6 +50,70 @@ public sealed partial class DeviceOwner
             (int)systemUpdateWindow.Start.ToTimeSpan().TotalMinutes,
             (int)systemUpdateWindow.End.ToTimeSpan().TotalMinutes);
 
+    private static IList<ResolveInfo> QueryActivities(PackageManager packageManager, Intent intent) =>
+        OperatingSystem.IsAndroidVersionAtLeast(33)
+            ? packageManager.QueryIntentActivities(intent, PackageManager.ResolveInfoFlags.Of(0L))
+            : packageManager.QueryIntentActivities(intent, 0);
+
+    private static HashSet<string> FindAppPackages()
+    {
+        var packageManager = Application.Context.PackageManager!;
+        var packages = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var category in (string[])[Intent.CategoryLauncher, Intent.CategoryHome])
+        {
+            using var intent = new Intent(Intent.ActionMain);
+            intent.AddCategory(category);
+            foreach (var info in QueryActivities(packageManager, intent))
+            {
+                if (info.ActivityInfo?.PackageName is { } packageName)
+                {
+                    packages.Add(packageName);
+                }
+            }
+        }
+
+        return packages;
+    }
+
+    private static string? FindSettingsPackage()
+    {
+        using var intent = new Intent(Android.Provider.Settings.ActionSettings);
+        using var component = intent.ResolveActivity(Application.Context.PackageManager!);
+        return component?.PackageName;
+    }
+
+    private void HideApps(ComponentName admin, IEnumerable<string> lockTaskPackages)
+    {
+        UnhideApps(admin);
+
+        var excluded = new HashSet<string>(lockTaskPackages, StringComparer.Ordinal) { Application.Context.PackageName! };
+        if (FindSettingsPackage() is { } settingsPackage)
+        {
+            excluded.Add(settingsPackage);
+        }
+
+        var hidden = new List<string>();
+        foreach (var packageName in FindAppPackages())
+        {
+            if (!excluded.Contains(packageName) && policyManager.SetApplicationHidden(admin, packageName, true))
+            {
+                hidden.Add(packageName);
+            }
+        }
+
+        preferences.Set(HiddenPackagesKey, String.Join(',', hidden));
+    }
+
+    private void UnhideApps(ComponentName admin)
+    {
+        foreach (var packageName in preferences.Get(HiddenPackagesKey, string.Empty).Split(',', StringSplitOptions.RemoveEmptyEntries))
+        {
+            policyManager.SetApplicationHidden(admin, packageName, false);
+        }
+
+        preferences.Remove(HiddenPackagesKey);
+    }
+
     private partial bool ResolveDeviceOwner() =>
         policyManager.IsDeviceOwnerApp(Application.Context.PackageName);
 
@@ -78,7 +144,7 @@ public sealed partial class DeviceOwner
     private partial bool ResolveLockTaskAllowed() =>
         policyManager.IsLockTaskPermitted(Application.Context.PackageName);
 
-    private partial void PlatformAllowLockTask(IReadOnlyList<string> lockTaskPackages)
+    private partial void PlatformAllowLockTask(IEnumerable<string> lockTaskPackages)
     {
         using var admin = CreateAdmin();
         policyManager.SetLockTaskPackages(admin, CreateLockTaskPackages(lockTaskPackages));
@@ -90,7 +156,7 @@ public sealed partial class DeviceOwner
         policyManager.SetLockTaskPackages(admin, []);
     }
 
-    private partial void PlatformApplyPolicy(SystemUpdateWindow systemUpdateWindow, IReadOnlyList<string> lockTaskPackages)
+    private partial void PlatformApplyPolicy(SystemUpdateWindow systemUpdateWindow, IEnumerable<string> lockTaskPackages)
     {
         using var admin = CreateAdmin();
         using var home = CreateHome();
@@ -98,8 +164,9 @@ public sealed partial class DeviceOwner
         using var filter = new IntentFilter(Intent.ActionMain);
         filter.AddCategory(Intent.CategoryHome);
         filter.AddCategory(Intent.CategoryDefault);
+        var allowedPackages = CreateLockTaskPackages(lockTaskPackages);
 
-        policyManager.SetLockTaskPackages(admin, CreateLockTaskPackages(lockTaskPackages));
+        policyManager.SetLockTaskPackages(admin, allowedPackages);
         policyManager.SetLockTaskFeatures(admin, LockTaskFeatures.SystemInfo | LockTaskFeatures.GlobalActions);
         Application.Context.PackageManager!.SetComponentEnabledSetting(home, ComponentEnabledState.Enabled, ComponentEnableOption.DontKillApp);
         policyManager.AddPersistentPreferredActivity(admin, filter, home);
@@ -112,6 +179,9 @@ public sealed partial class DeviceOwner
         }
 
         policyManager.SetSystemUpdatePolicy(admin, systemUpdatePolicy);
+        policyManager.SetStatusBarDisabled(admin, true);
+        policyManager.SetPermissionPolicy(admin, PermissionPolicy.AutoGrant);
+        HideApps(admin, allowedPackages);
     }
 
     private partial void PlatformClearPolicy()
@@ -132,6 +202,9 @@ public sealed partial class DeviceOwner
         }
 
         policyManager.SetSystemUpdatePolicy(admin, null);
+        policyManager.SetStatusBarDisabled(admin, false);
+        policyManager.SetPermissionPolicy(admin, PermissionPolicy.Prompt);
+        UnhideApps(admin);
     }
 
     private partial void PlatformReboot()
@@ -145,6 +218,19 @@ public sealed partial class DeviceOwner
         using var admin = CreateAdmin();
         using var systemUpdatePolicy = CreateSystemUpdatePolicy(systemUpdateWindow);
         policyManager.SetSystemUpdatePolicy(admin, systemUpdatePolicy);
+    }
+
+    private partial void PlatformHideApps(IEnumerable<string> lockTaskPackages)
+    {
+        using var admin = CreateAdmin();
+        HideApps(admin, lockTaskPackages);
+    }
+
+    private partial void PlatformSetMessages(string? lockScreenInfo, string? supportMessage)
+    {
+        using var admin = CreateAdmin();
+        policyManager.SetDeviceOwnerLockScreenInfo(admin, lockScreenInfo);
+        policyManager.SetShortSupportMessage(admin, supportMessage);
     }
 
     private partial void PlatformSendConfiguration(ManagedSettings settings)
@@ -179,6 +265,21 @@ public sealed partial class DeviceOwner
         if (settings.LockTaskPackages is not null)
         {
             bundle.PutString(ManagedConfiguration.LockTaskPackagesKey, settings.LockTaskPackages);
+        }
+
+        if (settings.UpdateLocation is not null)
+        {
+            bundle.PutString(ManagedConfiguration.UpdateLocationKey, settings.UpdateLocation);
+        }
+
+        if (settings.LockScreenInfo is not null)
+        {
+            bundle.PutString(ManagedConfiguration.LockScreenInfoKey, settings.LockScreenInfo);
+        }
+
+        if (settings.SupportMessage is not null)
+        {
+            bundle.PutString(ManagedConfiguration.SupportMessageKey, settings.SupportMessage);
         }
 
         policyManager.SetApplicationRestrictions(admin, Application.Context.PackageName, bundle);

@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:s="http://smart/maui"
+             xmlns:shell="clr-namespace:Template.MobileApp.Shell"
+             xmlns:domain="clr-namespace:Template.MobileApp.Domain"
+             xmlns:module="clr-namespace:Template.MobileApp.Modules.Kiosk"
+             x:Class="Template.MobileApp.Modules.Kiosk.KioskConfigurationView"
+             x:DataType="{x:Type module:KioskConfigurationViewModel}"
+             s:BindingContextResolver.Type="{x:Type module:KioskConfigurationViewModel}"
+             shell:ShellProperty.Title="Test configuration"
+             shell:ShellProperty.Function1Text="Back"
+             shell:ShellProperty.Function1Enabled="True">
+
+    <ContentView.Resources>
+        <ResourceDictionary>
+
+            <!-- Layout -->
+
+            <Style x:Key="ConfigurationStack"
+                   TargetType="VerticalStackLayout">
+                <Setter Property="Padding" Value="12" />
+                <Setter Property="Spacing" Value="8" />
+            </Style>
+
+            <Style x:Key="ConfigurationRowGrid"
+                   TargetType="Grid">
+                <Setter Property="ColumnSpacing" Value="12" />
+                <Setter Property="MinimumHeightRequest" Value="48" />
+            </Style>
+
+            <Style x:Key="ConfigurationNameLabel"
+                   TargetType="Label"
+                   BasedOn="{StaticResource NameLabel}">
+                <Setter Property="VerticalTextAlignment" Value="Center" />
+            </Style>
+
+            <Style x:Key="ConfigurationSwitch"
+                   TargetType="Switch">
+                <Setter Property="VerticalOptions" Value="Center" />
+            </Style>
+
+            <Style x:Key="ConfigurationButtonGrid"
+                   TargetType="Grid">
+                <Setter Property="Margin" Value="0,8,0,0" />
+                <Setter Property="ColumnSpacing" Value="8" />
+                <Setter Property="HeightRequest" Value="56" />
+            </Style>
+
+        </ResourceDictionary>
+    </ContentView.Resources>
+
+    <!-- Content -->
+    <ScrollView>
+        <VerticalStackLayout Style="{StaticResource ConfigurationStack}">
+
+            <Grid Style="{StaticResource ConfigurationRowGrid}"
+                  ColumnDefinitions="*,2*">
+                <Label Grid.Column="0"
+                       Style="{StaticResource ConfigurationNameLabel}"
+                       Text="Admin PIN" />
+                <Entry Grid.Column="1"
+                       Style="{StaticResource InputEntry}"
+                       Text="{Binding AdminPin}"
+                       Keyboard="Numeric"
+                       MaxLength="{x:Static domain:Length.AdminPin}" />
+            </Grid>
+            <Grid Style="{StaticResource ConfigurationRowGrid}"
+                  ColumnDefinitions="*,2*">
+                <Label Grid.Column="0"
+                       Style="{StaticResource ConfigurationNameLabel}"
+                       Text="Message" />
+                <Entry Grid.Column="1"
+                       Style="{StaticResource InputEntry}"
+                       Text="{Binding Message}" />
+            </Grid>
+            <Grid Style="{StaticResource ConfigurationRowGrid}"
+                  ColumnDefinitions="*,2*">
+                <Label Grid.Column="0"
+                       Style="{StaticResource ConfigurationNameLabel}"
+                       Text="Update window" />
+                <Entry Grid.Column="1"
+                       Style="{StaticResource InputEntry}"
+                       Text="{Binding UpdateWindow}"
+                       MaxLength="{x:Static domain:Length.SystemUpdateWindow}" />
+            </Grid>
+            <Grid Style="{StaticResource ConfigurationRowGrid}"
+                  ColumnDefinitions="*,2*">
+                <Label Grid.Column="0"
+                       Style="{StaticResource ConfigurationNameLabel}"
+                       Text="Lock task apps" />
+                <Entry Grid.Column="1"
+                       Style="{StaticResource InputEntry}"
+                       Text="{Binding LockTaskPackages}" />
+            </Grid>
+            <Grid Style="{StaticResource ConfigurationRowGrid}"
+                  ColumnDefinitions="*,2*">
+                <Label Grid.Column="0"
+                       Style="{StaticResource ConfigurationNameLabel}"
+                       Text="Update URL" />
+                <Entry Grid.Column="1"
+                       Style="{StaticResource InputEntry}"
+                       Text="{Binding UpdateLocation}"
+                       Keyboard="Url" />
+            </Grid>
+            <Grid Style="{StaticResource ConfigurationRowGrid}"
+                  ColumnDefinitions="*,2*">
+                <Label Grid.Column="0"
+                       Style="{StaticResource ConfigurationNameLabel}"
+                       Text="Lock screen info" />
+                <Entry Grid.Column="1"
+                       Style="{StaticResource InputEntry}"
+                       Text="{Binding LockScreenInfo}" />
+            </Grid>
+            <Grid Style="{StaticResource ConfigurationRowGrid}"
+                  ColumnDefinitions="*,2*">
+                <Label Grid.Column="0"
+                       Style="{StaticResource ConfigurationNameLabel}"
+                       Text="Support message" />
+                <Entry Grid.Column="1"
+                       Style="{StaticResource InputEntry}"
+                       Text="{Binding SupportMessage}" />
+            </Grid>
+            <Grid Style="{StaticResource ConfigurationRowGrid}"
+                  ColumnDefinitions="*,Auto">
+                <Label Grid.Column="0"
+                       Style="{StaticResource ConfigurationNameLabel}"
+                       Text="Keep screen on" />
+                <Switch Grid.Column="1"
+                        Style="{StaticResource ConfigurationSwitch}"
+                        IsToggled="{Binding KeepScreenOn}" />
+            </Grid>
+            <Grid Style="{StaticResource ConfigurationRowGrid}"
+                  ColumnDefinitions="*,Auto">
+                <Label Grid.Column="0"
+                       Style="{StaticResource ConfigurationNameLabel}"
+                       Text="Hide system bars" />
+                <Switch Grid.Column="1"
+                        Style="{StaticResource ConfigurationSwitch}"
+                        IsToggled="{Binding HideSystemBars}" />
+            </Grid>
+            <Grid Style="{StaticResource ConfigurationButtonGrid}"
+                  ColumnDefinitions="*,*">
+                <Button Grid.Column="0"
+                        Style="{StaticResource PrimaryButton}"
+                        Command="{Binding SendCommand}"
+                        Text="Send" />
+                <Button Grid.Column="1"
+                        Style="{StaticResource SecondaryButton}"
+                        Command="{Binding ClearCommand}"
+                        Text="Clear" />
+            </Grid>
+
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentView>

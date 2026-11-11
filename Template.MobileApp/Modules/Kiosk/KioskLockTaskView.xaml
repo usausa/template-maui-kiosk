@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:s="http://smart/maui"
+             xmlns:shell="clr-namespace:Template.MobileApp.Shell"
+             xmlns:module="clr-namespace:Template.MobileApp.Modules.Kiosk"
+             x:Class="Template.MobileApp.Modules.Kiosk.KioskLockTaskView"
+             x:DataType="{x:Type module:KioskLockTaskViewModel}"
+             s:BindingContextResolver.Type="{x:Type module:KioskLockTaskViewModel}"
+             shell:ShellProperty.Title="Lock task"
+             shell:ShellProperty.Function1Text="Back"
+             shell:ShellProperty.Function1Enabled="True">
+
+    <ContentView.Resources>
+        <ResourceDictionary>
+
+            <!-- Layout -->
+
+            <Style x:Key="LockTaskStack"
+                   TargetType="VerticalStackLayout">
+                <Setter Property="Padding" Value="12" />
+                <Setter Property="Spacing" Value="8" />
+            </Style>
+
+            <Style x:Key="LockTaskRowGrid"
+                   TargetType="Grid">
+                <Setter Property="ColumnSpacing" Value="12" />
+                <Setter Property="MinimumHeightRequest" Value="48" />
+            </Style>
+
+            <Style x:Key="LockTaskNameLabel"
+                   TargetType="Label"
+                   BasedOn="{StaticResource NameLabel}">
+                <Setter Property="VerticalTextAlignment" Value="Center" />
+            </Style>
+
+            <Style x:Key="LockTaskValueLabel"
+                   TargetType="Label"
+                   BasedOn="{StaticResource ValueLabel}">
+                <Setter Property="VerticalTextAlignment" Value="Center" />
+            </Style>
+
+            <Style x:Key="LockTaskButtonGrid"
+                   TargetType="Grid">
+                <Setter Property="Margin" Value="0,8,0,0" />
+                <Setter Property="ColumnSpacing" Value="8" />
+                <Setter Property="HeightRequest" Value="56" />
+            </Style>
+
+        </ResourceDictionary>
+    </ContentView.Resources>
+
+    <!-- Content -->
+    <ScrollView>
+        <VerticalStackLayout Style="{StaticResource LockTaskStack}">
+
+            <Grid Style="{StaticResource LockTaskRowGrid}"
+                  ColumnDefinitions="*,Auto">
+                <Label Grid.Column="0"
+                       Style="{StaticResource LockTaskNameLabel}"
+                       Text="State" />
+                <Label Grid.Column="1"
+                       Style="{StaticResource LockTaskValueLabel}"
+                       Text="{Binding Kiosk.LockTaskState}" />
+            </Grid>
+            <Grid Style="{StaticResource LockTaskButtonGrid}"
+                  ColumnDefinitions="*,*">
+                <Button Grid.Column="0"
+                        Style="{StaticResource PrimaryButton}"
+                        Command="{Binding StartCommand}"
+                        Text="Start" />
+                <Button Grid.Column="1"
+                        Style="{StaticResource SecondaryButton}"
+                        Command="{Binding StopCommand}"
+                        Text="Stop" />
+            </Grid>
+            <Grid Style="{StaticResource LockTaskButtonGrid}">
+                <Button Style="{StaticResource TertiaryButton}"
+                        Command="{Binding OpenSettingsCommand}"
+                        Text="Open settings" />
+            </Grid>
+
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentView>

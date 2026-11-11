@@ -5,5 +5,8 @@ public enum ViewId
     Menu,
     KioskStatus,
     KioskApps,
-    KioskAdmin
+    KioskLockTask,
+    KioskPolicy,
+    KioskUpdate,
+    KioskConfiguration
 }

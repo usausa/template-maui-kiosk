@@ -43,7 +43,10 @@ public sealed class PolicyComplianceActivity : Activity
             ReadBoolean(extras, ManagedConfiguration.HideSystemBarsKey),
             extras?.GetString(ManagedConfiguration.MessageKey),
             extras?.GetString(ManagedConfiguration.SystemUpdateWindowKey),
-            extras?.GetString(ManagedConfiguration.LockTaskPackagesKey));
+            extras?.GetString(ManagedConfiguration.LockTaskPackagesKey),
+            extras?.GetString(ManagedConfiguration.UpdateLocationKey),
+            extras?.GetString(ManagedConfiguration.LockScreenInfoKey),
+            extras?.GetString(ManagedConfiguration.SupportMessageKey));
 
     private static bool? ReadBoolean(PersistableBundle? extras, string key) =>
         Boolean.TryParse(extras?.GetString(key), out var value) ? value : null;

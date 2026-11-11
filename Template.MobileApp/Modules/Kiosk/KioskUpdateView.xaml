@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:s="http://smart/maui"
+             xmlns:shell="clr-namespace:Template.MobileApp.Shell"
+             xmlns:module="clr-namespace:Template.MobileApp.Modules.Kiosk"
+             x:Class="Template.MobileApp.Modules.Kiosk.KioskUpdateView"
+             x:DataType="{x:Type module:KioskUpdateViewModel}"
+             s:BindingContextResolver.Type="{x:Type module:KioskUpdateViewModel}"
+             shell:ShellProperty.Title="App update"
+             shell:ShellProperty.Function1Text="Back"
+             shell:ShellProperty.Function1Enabled="True">
+
+    <ContentView.Resources>
+        <ResourceDictionary>
+
+            <!-- Layout -->
+
+            <Style x:Key="UpdateStack"
+                   TargetType="VerticalStackLayout">
+                <Setter Property="Padding" Value="12" />
+                <Setter Property="Spacing" Value="8" />
+            </Style>
+
+            <Style x:Key="UpdateRowGrid"
+                   TargetType="Grid">
+                <Setter Property="ColumnSpacing" Value="12" />
+                <Setter Property="MinimumHeightRequest" Value="48" />
+            </Style>
+
+            <Style x:Key="UpdateNameLabel"
+                   TargetType="Label"
+                   BasedOn="{StaticResource NameLabel}">
+                <Setter Property="VerticalTextAlignment" Value="Center" />
+            </Style>
+
+            <Style x:Key="UpdateValueLabel"
+                   TargetType="Label"
+                   BasedOn="{StaticResource ValueLabel}">
+                <Setter Property="VerticalTextAlignment" Value="Center" />
+            </Style>
+
+            <Style x:Key="UpdateButtonGrid"
+                   TargetType="Grid">
+                <Setter Property="Margin" Value="0,8,0,0" />
+                <Setter Property="ColumnSpacing" Value="8" />
+                <Setter Property="HeightRequest" Value="56" />
+            </Style>
+
+        </ResourceDictionary>
+    </ContentView.Resources>
+
+    <!-- Content -->
+    <ScrollView>
+        <VerticalStackLayout Style="{StaticResource UpdateStack}">
+
+            <Grid Style="{StaticResource UpdateRowGrid}"
+                  ColumnDefinitions="*,Auto">
+                <Label Grid.Column="0"
+                       Style="{StaticResource UpdateNameLabel}"
+                       Text="Version" />
+                <Label Grid.Column="1"
+                       Style="{StaticResource UpdateValueLabel}"
+                       Text="{Binding Version}" />
+            </Grid>
+            <Grid Style="{StaticResource UpdateButtonGrid}">
+                <Button Style="{StaticResource TertiaryButton}"
+                        Command="{Binding UpdateCommand}"
+                        Text="Update" />
+            </Grid>
+
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentView>

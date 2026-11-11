@@ -2,19 +2,13 @@ namespace Template.MobileApp.Modules.Kiosk;
 
 using Template.MobileApp.Components;
 
-public sealed partial class KioskAdminViewModel : AppViewModelBase
+public sealed partial class KioskConfigurationViewModel : AppViewModelBase
 {
     // Field
-
-    private static readonly TimeSpan LockTaskPollInterval = TimeSpan.FromSeconds(1);
-
-    private readonly ILogger<KioskAdminViewModel> log;
 
     private readonly IDialog dialog;
 
     private readonly DeviceOwner deviceOwner;
-
-    private readonly LockTask lockTask;
 
     // Property
 
@@ -33,24 +27,21 @@ public sealed partial class KioskAdminViewModel : AppViewModelBase
     public partial string LockTaskPackages { get; set; }
 
     [ObservableProperty]
+    public partial string UpdateLocation { get; set; }
+
+    [ObservableProperty]
+    public partial string LockScreenInfo { get; set; }
+
+    [ObservableProperty]
+    public partial string SupportMessage { get; set; }
+
+    [ObservableProperty]
     public partial bool KeepScreenOn { get; set; }
 
     [ObservableProperty]
     public partial bool HideSystemBars { get; set; }
 
     // Command
-
-    public IObserveCommand StartCommand { get; }
-
-    public IObserveCommand StopCommand { get; }
-
-    public IObserveCommand OpenSettingsCommand { get; }
-
-    public IObserveCommand ApplyPolicyCommand { get; }
-
-    public IObserveCommand ClearPolicyCommand { get; }
-
-    public IObserveCommand RebootCommand { get; }
 
     public IObserveCommand SendCommand { get; }
 
@@ -60,45 +51,27 @@ public sealed partial class KioskAdminViewModel : AppViewModelBase
     // Constructor
     //--------------------------------------------------------------------------------
 
-    public KioskAdminViewModel(
-        ILogger<KioskAdminViewModel> log,
+    public KioskConfigurationViewModel(
         IDialog dialog,
         DeviceOwner deviceOwner,
-        LockTask lockTask,
         KioskState kiosk)
     {
-        this.log = log;
         this.dialog = dialog;
         this.deviceOwner = deviceOwner;
-        this.lockTask = lockTask;
         Kiosk = kiosk;
 
         AdminPin = kiosk.IsAdminPinConfigured ? kiosk.AdminPin : string.Empty;
         Message = kiosk.Message ?? string.Empty;
         UpdateWindow = kiosk.IsSystemUpdateWindowConfigured ? kiosk.SystemUpdateWindow.ToString() : string.Empty;
         LockTaskPackages = kiosk.IsLockTaskPackagesConfigured ? String.Join(',', kiosk.LockTaskPackages) : string.Empty;
+        UpdateLocation = kiosk.UpdateLocation ?? string.Empty;
+        LockScreenInfo = kiosk.LockScreenInfo ?? string.Empty;
+        SupportMessage = kiosk.SupportMessage ?? string.Empty;
         KeepScreenOn = kiosk.KeepScreenOn;
         HideSystemBars = kiosk.HideSystemBars;
 
-        StartCommand = MakeDelegateCommand(StartLockTask, () => Kiosk.LockTaskState == LockTaskState.None);
-        StopCommand = MakeAsyncCommand(StopLockTaskAsync, () => Kiosk.LockTaskState != LockTaskState.None);
-        OpenSettingsCommand = MakeDelegateCommand(AndroidHelper.OpenSettings, () => Kiosk.LockTaskState == LockTaskState.None);
-        ApplyPolicyCommand = MakeAsyncCommand(ApplyPolicyAsync, () => !Kiosk.IsPolicyApplied);
-        ClearPolicyCommand = MakeAsyncCommand(ClearPolicyAsync, () => Kiosk.IsPolicyApplied);
-        RebootCommand = MakeAsyncCommand(RebootAsync);
         SendCommand = MakeAsyncCommand(SendAsync);
         ClearCommand = MakeAsyncCommand(ClearAsync);
-
-        var lockTaskStateChanged = Kiosk.AsObservable(nameof(KioskState.LockTaskState));
-        Observe(lockTaskStateChanged, StartCommand);
-        Observe(lockTaskStateChanged, StopCommand);
-        Observe(lockTaskStateChanged, OpenSettingsCommand);
-
-        var policyAppliedChanged = Kiosk.AsObservable(nameof(KioskState.IsPolicyApplied));
-        Observe(policyAppliedChanged, ApplyPolicyCommand);
-        Observe(policyAppliedChanged, ClearPolicyCommand);
-
-        Disposables.Add(Observable.Interval(LockTaskPollInterval).ObserveOnCurrentContext().Subscribe(_ => Kiosk.RefreshLockTask()));
     }
 
     //--------------------------------------------------------------------------------
@@ -119,64 +92,6 @@ public sealed partial class KioskAdminViewModel : AppViewModelBase
     // Operation
     //--------------------------------------------------------------------------------
 
-    private void StartLockTask()
-    {
-        if (Kiosk.IsDeviceOwner)
-        {
-            deviceOwner.AllowLockTask(Kiosk.LockTaskPackages);
-        }
-
-        lockTask.Start();
-    }
-
-    private async Task StopLockTaskAsync()
-    {
-        if (await lockTask.StopAsync() && Kiosk.IsDeviceOwner)
-        {
-            deviceOwner.DisallowLockTask();
-        }
-    }
-
-    private async Task ApplyPolicyAsync()
-    {
-        if (!Kiosk.IsDeviceOwner)
-        {
-            return;
-        }
-
-        deviceOwner.ApplyPolicy(Kiosk.SystemUpdateWindow, Kiosk.LockTaskPackages);
-        Kiosk.RefreshPolicy();
-        if (Kiosk.LockTaskState == LockTaskState.None)
-        {
-            lockTask.Start();
-        }
-
-        await dialog.Toast("Policy applied");
-    }
-
-    private async Task ClearPolicyAsync()
-    {
-        if (!Kiosk.IsDeviceOwner || !await lockTask.StopAsync())
-        {
-            return;
-        }
-
-        deviceOwner.ClearPolicy();
-        Kiosk.RefreshPolicy();
-        await dialog.Toast("Policy cleared");
-    }
-
-    private async Task RebootAsync()
-    {
-        if (!Kiosk.IsDeviceOwner || !await dialog.ConfirmAsync("Reboot the device?"))
-        {
-            return;
-        }
-
-        log.InfoRebootRequested();
-        deviceOwner.Reboot();
-    }
-
     private async Task SendAsync()
     {
         if (!Kiosk.IsDeviceOwner)
@@ -196,13 +111,22 @@ public sealed partial class KioskAdminViewModel : AppViewModelBase
             return;
         }
 
+        if (!String.IsNullOrEmpty(UpdateLocation) && !Uri.TryCreate(UpdateLocation, UriKind.Absolute, out _))
+        {
+            await dialog.InformationAsync("Update URL must be a URL");
+            return;
+        }
+
         deviceOwner.SendConfiguration(new ManagedSettings(
             String.IsNullOrEmpty(AdminPin) ? null : AdminPin,
             KeepScreenOn,
             HideSystemBars,
             String.IsNullOrEmpty(Message) ? null : Message,
             String.IsNullOrEmpty(UpdateWindow) ? null : UpdateWindow,
-            String.IsNullOrWhiteSpace(LockTaskPackages) ? null : LockTaskPackages));
+            String.IsNullOrWhiteSpace(LockTaskPackages) ? null : LockTaskPackages,
+            String.IsNullOrEmpty(UpdateLocation) ? null : UpdateLocation,
+            String.IsNullOrEmpty(LockScreenInfo) ? null : LockScreenInfo,
+            String.IsNullOrEmpty(SupportMessage) ? null : SupportMessage));
         await dialog.Toast("Configuration sent");
     }
 

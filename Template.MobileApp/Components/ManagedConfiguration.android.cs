@@ -39,7 +39,10 @@ public sealed partial class ManagedConfiguration
             bundle.ContainsKey(HideSystemBarsKey) ? bundle.GetBoolean(HideSystemBarsKey) : null,
             bundle.ContainsKey(MessageKey) ? bundle.GetString(MessageKey) : null,
             bundle.ContainsKey(SystemUpdateWindowKey) ? bundle.GetString(SystemUpdateWindowKey) : null,
-            bundle.ContainsKey(LockTaskPackagesKey) ? bundle.GetString(LockTaskPackagesKey) : null);
+            bundle.ContainsKey(LockTaskPackagesKey) ? bundle.GetString(LockTaskPackagesKey) : null,
+            bundle.ContainsKey(UpdateLocationKey) ? bundle.GetString(UpdateLocationKey) : null,
+            bundle.ContainsKey(LockScreenInfoKey) ? bundle.GetString(LockScreenInfoKey) : null,
+            bundle.ContainsKey(SupportMessageKey) ? bundle.GetString(SupportMessageKey) : null);
     }
 
     private partial void StartReceiver()

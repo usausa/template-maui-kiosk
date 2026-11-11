@@ -10,9 +10,13 @@ public static class AppIcons
     // Menu (Material / 24 / White)
     //--------------------------------------------------------------------------------
 
-    public static readonly FontImageSource AdminPanelSettings = Create(MaterialIcons.Admin_panel_settings, MenuSize, Colors.White);
     public static readonly FontImageSource Apps = Create(MaterialIcons.Apps, MenuSize, Colors.White);
     public static readonly FontImageSource Info = Create(MaterialIcons.Info, MenuSize, Colors.White);
+    public static readonly FontImageSource Lock = Create(MaterialIcons.Lock, MenuSize, Colors.White);
+    public static readonly FontImageSource Policy = Create(MaterialIcons.Policy, MenuSize, Colors.White);
+    public static readonly FontImageSource RestartAlt = Create(MaterialIcons.Restart_alt, MenuSize, Colors.White);
+    public static readonly FontImageSource SystemUpdate = Create(MaterialIcons.System_update, MenuSize, Colors.White);
+    public static readonly FontImageSource Tune = Create(MaterialIcons.Tune, MenuSize, Colors.White);
 
     //--------------------------------------------------------------------------------
     // Helper

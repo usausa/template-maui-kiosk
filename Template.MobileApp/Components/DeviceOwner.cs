@@ -36,18 +36,22 @@ public sealed partial class DeviceOwner : IDisposable
     public void SendConfiguration(ManagedSettings settings)
     {
         PlatformSendConfiguration(settings);
+        var lockTaskPackages = ManagedConfiguration.ParseLockTaskPackages(settings.LockTaskPackages);
         if (IsPolicyApplied)
         {
             PlatformSetSystemUpdateWindow(GetSystemUpdateWindow(settings));
+            PlatformHideApps(lockTaskPackages);
         }
 
         if (ResolveLockTaskAllowed())
         {
-            PlatformAllowLockTask(ManagedConfiguration.ParseLockTaskPackages(settings.LockTaskPackages));
+            PlatformAllowLockTask(lockTaskPackages);
         }
+
+        PlatformSetMessages(settings.LockScreenInfo, settings.SupportMessage);
     }
 
-    public void ClearConfiguration() => SendConfiguration(new ManagedSettings(null, null, null, null, null, null));
+    public void ClearConfiguration() => SendConfiguration(new ManagedSettings(null, null, null, null, null, null, null, null, null));
 
     // ------------------------------------------------------------
     // Provisioning
@@ -73,17 +77,21 @@ public sealed partial class DeviceOwner : IDisposable
 
     private partial bool ResolveLockTaskAllowed();
 
-    private partial void PlatformAllowLockTask(IReadOnlyList<string> lockTaskPackages);
+    private partial void PlatformAllowLockTask(IEnumerable<string> lockTaskPackages);
 
     private partial void PlatformDisallowLockTask();
 
-    private partial void PlatformApplyPolicy(SystemUpdateWindow systemUpdateWindow, IReadOnlyList<string> lockTaskPackages);
+    private partial void PlatformApplyPolicy(SystemUpdateWindow systemUpdateWindow, IEnumerable<string> lockTaskPackages);
 
     private partial void PlatformClearPolicy();
 
     private partial void PlatformReboot();
 
     private partial void PlatformSetSystemUpdateWindow(SystemUpdateWindow systemUpdateWindow);
+
+    private partial void PlatformHideApps(IEnumerable<string> lockTaskPackages);
+
+    private partial void PlatformSetMessages(string? lockScreenInfo, string? supportMessage);
 
     private partial void PlatformSendConfiguration(ManagedSettings settings);
 }

@@ -6,4 +6,7 @@
 	<restriction android:key="Message" android:title="Message" android:restrictionType="string" />
 	<restriction android:key="SystemUpdateWindow" android:title="System update window" android:restrictionType="string" android:defaultValue="02:00-04:00" />
 	<restriction android:key="LockTaskPackages" android:title="Lock task packages" android:restrictionType="string" />
+	<restriction android:key="UpdateLocation" android:title="Update location" android:restrictionType="string" />
+	<restriction android:key="LockScreenInfo" android:title="Lock screen info" android:restrictionType="string" />
+	<restriction android:key="SupportMessage" android:title="Support message" android:restrictionType="string" />
 </restrictions>

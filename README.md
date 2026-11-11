@@ -10,7 +10,7 @@ It is used from an MDM, or works as a simple MDM with the app as the device owne
 - Managed configurations
 - Lock task mode
 - Other apps during lock task mode
-- Admin screen with a PIN
+- Admin screens with a PIN
 - Full screen during lock task mode
 - Device policy as the device owner
 - System update window
@@ -18,15 +18,23 @@ It is used from an MDM, or works as a simple MDM with the app as the device owne
 - Reboot
 - App feedback to the MDM
 - Device owner setup with a QR code
+- App update by itself
+- Disabled status bar and hidden apps
+- Automatic permission grants
+- Lock screen and support messages
+- Wait after wrong PINs
 
 ## 📱 Screens
 
 | Screen | Source | Contents |
 |---|---|---|
-| Menu | `Modules/Main/MenuView.xaml` | Configuration message, and the Status, Apps, and Admin buttons |
+| Menu | `Modules/Main/MenuView.xaml` | Configuration message, the screen buttons, and Reboot |
 | Status | `Modules/Kiosk/KioskStatusView.xaml` | Device state, configuration values, app feedback, and version |
 | Apps | `Modules/Kiosk/KioskAppsView.xaml` | Buttons that open the allowed apps |
-| Admin | `Modules/Kiosk/KioskAdminView.xaml` | Lock task, device policy, reboot, and test configuration |
+| Lock task | `Modules/Kiosk/KioskLockTaskView.xaml` | Lock task state, Start, Stop, and Open settings |
+| Device policy | `Modules/Kiosk/KioskPolicyView.xaml` | Device policy state, Apply, and Clear |
+| App update | `Modules/Kiosk/KioskUpdateView.xaml` | Version, and Update |
+| Test configuration | `Modules/Kiosk/KioskConfigurationView.xaml` | Configuration values, Send, and Clear |
 
 ## 🧩 Android technologies
 
@@ -50,12 +58,15 @@ Reference: [Managed configurations](https://developer.android.com/work/managed-c
 
 | Key | Type | Default | Use |
 |---|---|---|---|
-| `AdminPin` | string | `0000` | PIN of the admin screen |
+| `AdminPin` | string | `0000` | PIN of the admin screens |
 | `KeepScreenOn` | bool | `true` | Keep the screen on during lock task mode |
 | `HideSystemBars` | bool | `true` | Hide the system bars during lock task mode |
 | `Message` | string | | Message on the menu |
 | `SystemUpdateWindow` | string | `02:00-04:00` | Window for automatic system updates |
 | `LockTaskPackages` | string | | Other apps in lock task mode (comma-separated) |
+| `UpdateLocation` | string | | URL of the APK for the app update |
+| `LockScreenInfo` | string | | Message on the lock screen |
+| `SupportMessage` | string | | Message on actions blocked by the policy |
 
 ```xml
 <restriction android:key="AdminPin" android:title="Admin PIN" android:restrictionType="string" android:defaultValue="0000" />
@@ -136,7 +147,7 @@ Reference: [Lock task mode](https://developer.android.com/work/dpc/dedicated-dev
 | 🧱 | `Components/LockTask.cs` | State watch, waiting for the stop (`StopAsync`) |
 | 🧱 | `Components/LockTask.android.cs` | `startLockTask()`, `stopLockTask()`, state, permission |
 | 📝 | `Components/DeviceOwner.android.cs` | Allowing itself and other apps (`setLockTaskPackages()`) |
-| 📝 | `Modules/Kiosk/KioskAdminViewModel.cs` | Start, Stop |
+| 📝 | `Modules/Kiosk/KioskLockTaskViewModel.cs` | Start, Stop |
 
 ```csharp
 [Activity(LaunchMode = LaunchMode.SingleTask, LockTaskMode = "if_whitelisted", ...)]
@@ -184,27 +195,32 @@ controller.SystemBarsBehavior = WindowInsetsControllerCompat.BehaviorShowTransie
 controller.Hide(WindowInsetsCompat.Type.SystemBars());
 ```
 
-### 🔑 Admin screen
+### 🔑 Admin screens
 
-Admin on the menu opens the admin screen after the PIN.  
-The admin screen stops lock task mode, and opens the Android settings.
+Lock task, Device policy, App update, and Test configuration on the menu open after the PIN, and Reboot also asks for it.  
+Lock task stops lock task mode, and opens the Android settings.  
+Without the device owner, the buttons other than Lock task cannot be pressed.  
+Five wrong PINs in a row make it wait 30 seconds, and the count stays after the app restarts.
 
 | Kind | Source | Contents |
 |---|---|---|
-| 📝 | `Modules/Main/MenuViewModel.cs` | PIN check |
+| 📝 | `Modules/Main/MenuView.xaml` | Buttons of the admin screens |
+| 📝 | `Modules/Main/MenuViewModel.cs` | PIN check, and the wait after wrong PINs |
 | 🧱 | `Modules/PopupNavigatorExtensions.cs` | PIN input (`InputPinAsync`) |
 | 🧱 | `Modules/Navigation/Modal/InputNumberView.xaml` | Number input popup |
 | 🧱 | `Modules/Navigation/Modal/InputNumberViewModel.cs` | Masked digits, leading zeros kept |
 | 🧱 | `Models/Input/` | Input value |
-| 📝 | `Modules/Kiosk/KioskAdminView.xaml` | Admin screen |
-| 📝 | `Modules/Kiosk/KioskAdminViewModel.cs` | Admin screen operations |
 | 🧱 | `Platforms/Android/AndroidHelper.cs` | Opening the settings (`OpenSettings`) |
+
+```xml
+<Button Command="{Binding AdminCommand}" CommandParameter="{markup:ViewId KioskPolicy}" IsEnabled="{Binding Kiosk.IsDeviceOwner}" Text="Device policy" />
+```
 
 ```csharp
 var pin = await popupNavigator.InputPinAsync("Admin PIN", Length.AdminPin);
 if (pin == Kiosk.AdminPin)
 {
-    await Navigator.ForwardAsync(ViewId.KioskAdmin);
+    await Navigator.ForwardAsync(id);
 }
 ```
 
@@ -247,20 +263,31 @@ Reference: [Dedicated devices cookbook](https://developer.android.com/work/dpc/d
 | No new users | `addUserRestriction()` | `DISALLOW_ADD_USER` |
 | No external media | `addUserRestriction()` | `DISALLOW_MOUNT_PHYSICAL_MEDIA` |
 | System updates | `setSystemUpdatePolicy()` | Window from the configuration |
+| Status bar disabled | `setStatusBarDisabled()` | `true` |
+| Hidden apps | `setApplicationHidden()` | Launcher and home apps except this app, other apps, and the settings |
+| Automatic permission grants | `setPermissionPolicy()` | `PERMISSION_POLICY_AUTO_GRANT` |
 
 Clear waits for lock task mode to stop, and removes the permission first (another order closes the app).  
-Screen on while charging goes back to the value before Apply.
+Screen on while charging goes back to the value before Apply.  
+The disabled status bar works out of lock task mode (maintenance and the app update), where the notifications and quick settings do not open.  
+Hidden apps keep their data, and Clear shows them again (a configuration change while the policy is applied hides them again).  
+Permissions that apps ask for are granted without a dialog, and stay granted and fixed by the admin after Clear.
 
 | Kind | Source | Contents |
 |---|---|---|
 | 📝 | `Components/DeviceOwner.android.cs` | `PlatformApplyPolicy`, `PlatformClearPolicy` |
+| 📝 | `Components/DeviceOwner.cs` | Hiding the apps again on a configuration change |
 | 🧱 | `Components/LockTask.cs` | Waiting for the stop (`StopAsync`) |
-| 📝 | `Modules/Kiosk/KioskAdminViewModel.cs` | Apply, Clear |
+| 📝 | `Modules/Kiosk/KioskPolicyViewModel.cs` | Apply, Clear |
+| 🧱 | `Platforms/Android/AndroidManifest.xml` | `<queries>` for home apps and the settings |
 
 ```csharp
 policyManager.SetLockTaskFeatures(admin, LockTaskFeatures.SystemInfo | LockTaskFeatures.GlobalActions);
 policyManager.SetKeyguardDisabled(admin, true);
 policyManager.AddUserRestriction(admin, UserManager.DisallowFactoryReset);
+policyManager.SetStatusBarDisabled(admin, true);
+policyManager.SetApplicationHidden(admin, packageName, true);
+policyManager.SetPermissionPolicy(admin, PermissionPolicy.AutoGrant);
 ```
 
 ### 🕑 System update window
@@ -282,20 +309,64 @@ using var policy = SystemUpdatePolicy.CreateWindowedInstallPolicy(120, 240);
 policyManager.SetSystemUpdatePolicy(admin, policy);
 ```
 
+### 🪪 Lock screen and support messages
+
+The device owner shows the `LockScreenInfo` configuration on the lock screen, and the `SupportMessage` configuration on actions blocked by the policy (such as factory reset in the settings).  
+They are set when the device owner sends the configuration, apart from Apply, and removed when the keys are not set.  
+The lock screen does not show while the policy is applied (no lock screen), so its message shows after Clear.
+
+| Kind | Source | Contents |
+|---|---|---|
+| 📝 | `Components/DeviceOwner.cs` | Setting them with the configuration |
+| 📝 | `Components/DeviceOwner.android.cs` | Setting (`PlatformSetMessages`) |
+| 📝 | `Modules/Kiosk/KioskStatusView.xaml` | Configuration values |
+
+```csharp
+policyManager.SetDeviceOwnerLockScreenInfo(admin, lockScreenInfo);
+policyManager.SetShortSupportMessage(admin, supportMessage);
+```
+
 ### 🔌 Reboot
 
-Reboot restarts the device after a confirmation.
+Reboot on the menu restarts the device after the PIN and a confirmation.
 
 | Kind | Source | Contents |
 |---|---|---|
 | 📝 | `Components/DeviceOwner.android.cs` | Reboot (`reboot()`) |
-| 📝 | `Modules/Kiosk/KioskAdminViewModel.cs` | Confirmation |
+| 📝 | `Modules/Main/MenuViewModel.cs` | PIN and confirmation |
 
 ```csharp
 if (await dialog.ConfirmAsync("Reboot the device?"))
 {
     deviceOwner.Reboot();
 }
+```
+
+### ⬆️ App update
+
+Update on App update downloads the APK at the `UpdateLocation` configuration, and installs it when it is this app with a larger version code.  
+As the device owner, the app installs it without a confirmation, and the system notifies that the admin updated the app.  
+The install stops the app, and the app opens again in lock task mode on `ACTION_MY_PACKAGE_REPLACED`.  
+The waiting overlay stays until the app stops, and a failed install shows Update failed.  
+While the policy is applied, nothing else opens during the install, since the other home apps are hidden.  
+The APK needs the same signature, and an HTTPS URL (cleartext HTTP is not allowed).  
+Reference: [Install app packages](https://developer.android.com/work/dpc/dedicated-devices/cookbook#install_app_packages)
+
+| Kind | Source | Contents |
+|---|---|---|
+| 🧱 | `Components/AppUpdater.cs` | Download, and waiting for the install |
+| 🧱 | `Components/AppUpdater.android.cs` | Package check and install (`PackageInstaller`) |
+| 🧱 | `Platforms/Android/AppUpdateReceiver.cs` | Install result, and opening the app again |
+| 📝 | `Modules/Kiosk/KioskUpdateViewModel.cs` | Update |
+
+```csharp
+using var parameters = new PackageInstaller.SessionParams(PackageInstallMode.FullInstall);
+parameters.SetAppPackageName(Application.Context.PackageName);
+var sessionId = installer.CreateSession(parameters);
+session.Commit(pendingIntent.IntentSender);
+
+[IntentFilter([Intent.ActionMyPackageReplaced])]
+public sealed class AppUpdateReceiver : BroadcastReceiver
 ```
 
 ### 🧪 Test configuration
@@ -305,7 +376,7 @@ The device owner sets the configurations of its own app, to try them without an 
 | Kind | Source | Contents |
 |---|---|---|
 | 📝 | `Components/DeviceOwner.android.cs` | Setting (`setApplicationRestrictions()`) |
-| 📝 | `Modules/Kiosk/KioskAdminViewModel.cs` | Send, Clear |
+| 📝 | `Modules/Kiosk/KioskConfigurationViewModel.cs` | Send, Clear |
 
 ```csharp
 bundle.PutString(ManagedConfiguration.AdminPinKey, settings.AdminPin);
@@ -366,31 +437,44 @@ The app data is not backed up or transferred.
 ### As a simple MDM
 
 1. Set the app as the device owner with a QR code (or `dpm` on a test device)
-2. Apply on the admin screen sets the device policy, and enters lock task mode in full screen
+2. Apply on Device policy sets the device policy, and enters lock task mode in full screen
 3. After a reboot, the app starts in lock task mode
 4. Apps on the menu opens the allowed apps
 
 ### Maintenance
 
-1. Admin on the menu asks for the PIN (`0000` by default)
-2. Stop ends lock task mode, and Open settings opens the settings
-3. Start returns to lock task mode, and Clear removes the device policy
+1. The admin screens on the menu ask for the PIN (`0000` by default)
+2. Stop on Lock task ends lock task mode, and Open settings opens the settings
+3. Start returns to lock task mode, and Clear on Device policy removes the device policy
+4. Update on App update updates the app from the `UpdateLocation` configuration
 
 ## 🔧 Setup
 
+Full screen and no switching to other apps work during lock task mode.  
+The system bars are hidden and the screen stays on by default (`HideSystemBars`, `KeepScreenOn`).  
+Only the apps in `LockTaskPackages` open, from Apps on the menu.  
+Set it up as the device owner on a test device, with a QR code, or from an MDM.
+
 ### Device owner
 
-Install the Debug build on a device without accounts (such as an emulator), and run the following.
+Install the Debug build on a device without accounts (such as an emulator), and make the app the device owner.
+
+```
+dotnet build Template.MobileApp/Template.MobileApp.csproj -c Debug -f net10.0-android -t:Install
+```
 
 ```
 adb shell dpm set-device-owner template.kioskapp/template.mobileapp.KioskAdminReceiver
 ```
 
-Open Admin on the menu with the PIN `0000`, and press Apply.
+Open Device policy on the menu with the PIN `0000`, and press Apply.  
+The app enters lock task mode in full screen, HOME and recent apps do not leave it, and the status bar cannot be pulled down.  
+Other launchers are hidden and the app is the home app, so it starts in lock task mode after a reboot.
 
 ### QR code
 
 Set the APK URL, the SHA-256 of the signing certificate (`keytool -list -v`), and the admin extras in `tools/Template.Tools.ProvisioningQr/appsettings.json`, and run the tool.  
+`"ApplyPolicy": "true"` in the admin extras applies the device policy at the end of the setup, as Apply does.  
 The tool writes `provisioning.json` and `provisioning.png`, and the values can also be given on the command line.  
 Use the signed Release build.
 
@@ -399,11 +483,21 @@ dotnet run --project tools/Template.Tools.ProvisioningQr -- --Provisioning:Downl
 ```
 
 On a new or reset device, tap the welcome screen six times, and read the QR code.  
+After the setup, the app starts as the home app in lock task mode in full screen.  
 The Release build cannot be removed with `dpm remove-active-admin`, so reset the device to set it up again.
+
+### App update
+
+Build the signed Release build from scratch with a larger `ApplicationVersion`, put the APK on an HTTPS server, and set its URL in the `UpdateLocation` configuration.  
+Check that the APK starts on a test device before putting it on the server, since an app that does not start stops the kiosk.
+
+```
+dotnet build Template.MobileApp/Template.MobileApp.csproj -c Release -f net10.0-android --no-incremental -p:ApplicationVersion=2 -p:ApplicationDisplayVersion=1.1
+```
 
 ### Removing the device owner
 
-Press Clear on the admin screen first (removing it with the policy applied leaves the app as the home app).
+Press Clear on Device policy first (removing it with the policy applied leaves the app as the home app).
 
 ```
 adb shell dpm remove-active-admin template.kioskapp/template.mobileapp.KioskAdminReceiver
@@ -411,8 +505,37 @@ adb shell dpm remove-active-admin template.kioskapp/template.mobileapp.KioskAdmi
 
 ### MDM
 
-Register the app in the MDM, allow lock task mode, and set the configuration keys.
+Register the app in the MDM, allow lock task mode, and set the configuration keys.  
+The app enters lock task mode in full screen at launch.  
+The lock task settings of the MDM decide whether HOME and recent apps work.
 
-## 🔗 Links
+## 📚 Docs
 
-- [template-maui](https://github.com/usausa/template-maui)
+The documents in `docs` (Japanese) describe what each topic does, and how to check it on an emulator step by step.  
+The tools for the checks on an emulator are in `tools/emulator`.
+
+| Document | Contents |
+|---|---|
+| [overview.md](docs/overview.md) | What device policy is (read first) |
+| [emulator.md](docs/emulator.md) | Emulator setup for the checks |
+| [managed-configuration.md](docs/managed-configuration.md) | Managed configurations |
+| [lock-task.md](docs/lock-task.md) | Lock task mode, full screen, and screen pinning |
+| [device-policy.md](docs/device-policy.md) | Device policy, home app, and reboot |
+| [status-bar-and-hidden-apps.md](docs/status-bar-and-hidden-apps.md) | Disabled status bar and hidden apps |
+| [permissions.md](docs/permissions.md) | Automatic permission grants |
+| [other-apps.md](docs/other-apps.md) | Other apps during lock task mode |
+| [system-update.md](docs/system-update.md) | System update window |
+| [app-feedback.md](docs/app-feedback.md) | App feedback to the MDM |
+| [lock-screen-messages.md](docs/lock-screen-messages.md) | Lock screen and support messages |
+| [admin-pin.md](docs/admin-pin.md) | Admin screens and the PIN |
+| [qr-provisioning.md](docs/qr-provisioning.md) | Device owner setup with a QR code |
+| [app-update.md](docs/app-update.md) | App update by itself |
+
+## 🔗 Related Projects
+
+| Project | Description |
+| --- | --- |
+| [template-maui](https://github.com/usausa/template-maui) | MAUI application template |
+| [template-maui-blazor](https://github.com/usausa/template-maui-blazor) | Blazor based application template |
+| [template-maui-keyboard](https://github.com/usausa/template-maui-keyboard) | Physical keyboard control example |
+| [template-maui-server](https://github.com/usausa/template-maui-server) | Server application template |

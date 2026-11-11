@@ -6,7 +6,10 @@ public sealed record ManagedSettings(
     bool? HideSystemBars,
     string? Message,
     string? SystemUpdateWindow,
-    string? LockTaskPackages);
+    string? LockTaskPackages,
+    string? UpdateLocation,
+    string? LockScreenInfo,
+    string? SupportMessage);
 
 public sealed partial class ManagedConfiguration : IDisposable
 {
@@ -16,8 +19,11 @@ public sealed partial class ManagedConfiguration : IDisposable
     public const string MessageKey = "Message";
     public const string SystemUpdateWindowKey = "SystemUpdateWindow";
     public const string LockTaskPackagesKey = "LockTaskPackages";
+    public const string UpdateLocationKey = "UpdateLocation";
+    public const string LockScreenInfoKey = "LockScreenInfo";
+    public const string SupportMessageKey = "SupportMessage";
 
-    private static readonly ManagedSettings Empty = new(null, null, null, null, null, null);
+    private static readonly ManagedSettings Empty = new(null, null, null, null, null, null, null, null, null);
 
     private bool started;
 

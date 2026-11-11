@@ -84,6 +84,15 @@ public sealed partial class KioskState : ObservableObject, IDisposable
     [ObservableProperty]
     public partial bool IsLockTaskPackagesConfigured { get; private set; }
 
+    [ObservableProperty]
+    public partial string? UpdateLocation { get; private set; }
+
+    [ObservableProperty]
+    public partial string? LockScreenInfo { get; private set; }
+
+    [ObservableProperty]
+    public partial string? SupportMessage { get; private set; }
+
     // Feedback
 
     [ObservableProperty]
@@ -198,7 +207,7 @@ public sealed partial class KioskState : ObservableObject, IDisposable
     [MemberNotNull(nameof(AdminPin), nameof(LockTaskPackages))]
     private void UpdateConfiguration(ManagedSettings settings)
     {
-        log.DebugManagedConfiguration(settings.AdminPin is not null, settings.KeepScreenOn, settings.HideSystemBars, settings.Message, settings.SystemUpdateWindow, settings.LockTaskPackages);
+        log.DebugManagedConfiguration(settings.AdminPin is not null, settings.KeepScreenOn, settings.HideSystemBars, settings.Message, settings.SystemUpdateWindow, settings.LockTaskPackages, settings.UpdateLocation, settings.LockScreenInfo, settings.SupportMessage);
 
         AdminPin = settings.AdminPin ?? DefaultAdminPin;
         IsAdminPinConfigured = settings.AdminPin is not null;
@@ -211,6 +220,9 @@ public sealed partial class KioskState : ObservableObject, IDisposable
         SystemUpdateWindow = IsSystemUpdateWindowConfigured ? systemUpdateWindow : SystemUpdateWindow.Default;
         LockTaskPackages = ManagedConfiguration.ParseLockTaskPackages(settings.LockTaskPackages);
         IsLockTaskPackagesConfigured = settings.LockTaskPackages is not null;
+        UpdateLocation = settings.UpdateLocation;
+        LockScreenInfo = settings.LockScreenInfo;
+        SupportMessage = settings.SupportMessage;
 
         adminPinValid = settings.AdminPin?.All(Char.IsAsciiDigit) ?? true;
         systemUpdateWindowValid = (settings.SystemUpdateWindow is null) || IsSystemUpdateWindowConfigured;

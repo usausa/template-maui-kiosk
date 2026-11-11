@@ -20,8 +20,8 @@ internal static partial class Log
 
     // Kiosk
 
-    [LoggerMessage(Level = LogLevel.Debug, Message = "Managed configuration changed. adminPinConfigured=[{adminPinConfigured}], keepScreenOn=[{keepScreenOn}], hideSystemBars=[{hideSystemBars}], message=[{message}], systemUpdateWindow=[{systemUpdateWindow}], lockTaskPackages=[{lockTaskPackages}]")]
-    public static partial void DebugManagedConfiguration(this ILogger logger, bool adminPinConfigured, bool? keepScreenOn, bool? hideSystemBars, string? message, string? systemUpdateWindow, string? lockTaskPackages);
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Managed configuration changed. adminPinConfigured=[{adminPinConfigured}], keepScreenOn=[{keepScreenOn}], hideSystemBars=[{hideSystemBars}], message=[{message}], systemUpdateWindow=[{systemUpdateWindow}], lockTaskPackages=[{lockTaskPackages}], updateLocation=[{updateLocation}], lockScreenInfo=[{lockScreenInfo}], supportMessage=[{supportMessage}]")]
+    public static partial void DebugManagedConfiguration(this ILogger logger, bool adminPinConfigured, bool? keepScreenOn, bool? hideSystemBars, string? message, string? systemUpdateWindow, string? lockTaskPackages, string? updateLocation, string? lockScreenInfo, string? supportMessage);
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Lock task state changed. state=[{state}], permitted=[{permitted}]")]
     public static partial void InfoLockTaskStateChanged(this ILogger logger, Components.LockTaskState state, bool permitted);
@@ -43,6 +43,15 @@ internal static partial class Log
 
     [LoggerMessage(Level = LogLevel.Information, Message = "App launched. package=[{packageName}], launched=[{launched}]")]
     public static partial void InfoAppLaunched(this ILogger logger, string packageName, bool launched);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "App update requested. result=[{result}]")]
+    public static partial void InfoAppUpdateRequested(this ILogger logger, Components.AppUpdateResult result);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "App update status. status=[{status}], message=[{message}]")]
+    public static partial void InfoAppUpdateStatus(this ILogger logger, int status, string? message);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Admin PIN locked. failures=[{failures}], until=[{until}]")]
+    public static partial void WarnAdminPinLocked(this ILogger logger, int failures, DateTimeOffset until);
 
     // Navigation
 
