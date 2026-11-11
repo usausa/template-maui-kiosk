@@ -2,8 +2,7 @@
 
 [English](README.md) | 日本語
 
-Android の専用端末向けのキオスクアプリの MAUI のテンプレート。  
-MDM から使うほか、アプリ自身がデバイスオーナーになる簡易 MDM としても動く。
+[Template](https://usausa.github.io/template/) project for MAUI kiosk.
 
 ## ✨ 主な機能
 
@@ -536,6 +535,3 @@ HOME や履歴が効くかは、MDM のロックタスクの設定で決まる�
 | プロジェクト | 説明 |
 | --- | --- |
 | [template-maui](https://github.com/usausa/template-maui) | MAUI アプリのテンプレート |
-| [template-maui-blazor](https://github.com/usausa/template-maui-blazor) | Blazor ベースのアプリのテンプレート |
-| [template-maui-keyboard](https://github.com/usausa/template-maui-keyboard) | 物理キー操作の見本 |
-| [template-maui-server](https://github.com/usausa/template-maui-server) | サーバーアプリのテンプレート |

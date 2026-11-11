@@ -2,8 +2,7 @@
 
 English | [日本語](README.ja.md)
 
-A MAUI template for Android kiosk apps on dedicated devices.  
-It is used from an MDM, or works as a simple MDM with the app as the device owner.
+[Template](https://usausa.github.io/template/) project for MAUI kiosk.
 
 ## ✨ Features
 
@@ -536,6 +535,3 @@ The tools for the checks on an emulator are in `tools/emulator`.
 | Project | Description |
 | --- | --- |
 | [template-maui](https://github.com/usausa/template-maui) | MAUI application template |
-| [template-maui-blazor](https://github.com/usausa/template-maui-blazor) | Blazor based application template |
-| [template-maui-keyboard](https://github.com/usausa/template-maui-keyboard) | Physical keyboard control example |
-| [template-maui-server](https://github.com/usausa/template-maui-server) | Server application template |
