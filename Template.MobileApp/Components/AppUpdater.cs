@@ -79,7 +79,7 @@ public sealed partial class AppUpdater : IDisposable
         {
             if (await PlatformInstallAsync(PackagePath))
             {
-                await Task.WhenAny(completion.Task, Task.Delay(InstallTimeout));
+                await completion.Task.WaitAsync(InstallTimeout);
             }
 
             return AppUpdateResult.InstallFailed;
