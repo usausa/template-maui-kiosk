@@ -459,7 +459,7 @@ Set it up as the device owner on a test device, with a QR code, or from an MDM.
 Install the Debug build on a device without accounts (such as an emulator), and make the app the device owner.
 
 ```
-dotnet build Template.MobileApp/Template.MobileApp.csproj -c Debug -f net10.0-android -t:Install
+dotnet build Template.MobileApp/Template.MobileApp.csproj -c Debug -f net11.0-android -t:Install
 ```
 
 ```
@@ -491,7 +491,7 @@ Build the signed Release build from scratch with a larger `ApplicationVersion`, 
 Check that the APK starts on a test device before putting it on the server, since an app that does not start stops the kiosk.
 
 ```
-dotnet build Template.MobileApp/Template.MobileApp.csproj -c Release -f net10.0-android --no-incremental -p:ApplicationVersion=2 -p:ApplicationDisplayVersion=1.1
+dotnet build Template.MobileApp/Template.MobileApp.csproj -c Release -f net11.0-android --no-incremental -p:ApplicationVersion=2 -p:ApplicationDisplayVersion=1.1
 ```
 
 ### Removing the device owner

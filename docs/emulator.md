@@ -51,7 +51,7 @@ Start-Process $emulator -ArgumentList "-avd Kiosk_API35 -port 5558"
 ### 入れる
 
 ```powershell
-dotnet build Template.MobileApp/Template.MobileApp.csproj -c Debug -f net10.0-android -p:RuntimeIdentifier=android-x64 -t:Install -p:AdbTarget="-s emulator-5558"
+dotnet build Template.MobileApp/Template.MobileApp.csproj -c Debug -f net11.0-android -p:RuntimeIdentifier=android-x64 -t:Install -p:AdbTarget="-s emulator-5558"
 ```
 
 ### デバイスオーナーにする

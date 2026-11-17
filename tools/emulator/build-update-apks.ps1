@@ -37,7 +37,7 @@ if (-not $Jdk) { $Jdk = Find-Jdk }
 $root = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 $project = Join-Path $root 'Template.MobileApp\Template.MobileApp.csproj'
 $manifest = Join-Path $root 'Template.MobileApp\Platforms\Android\AndroidManifest.xml'
-$apk = Join-Path $root 'Template.MobileApp\bin\Release\net10.0-android\android-x64\template.kioskapp-Signed.apk'
+$apk = Join-Path $root 'Template.MobileApp\bin\Release\net11.0-android\android-x64\template.kioskapp-Signed.apk'
 $output = Join-Path $root '__Emulator\update'
 
 $marker = 'android:testOnly="${testOnly}"'
@@ -50,7 +50,7 @@ if (([regex]::Matches($text, [regex]::Escape($marker))).Count -ne 1) {
 try {
     [System.IO.File]::WriteAllText($manifest, $text.Replace($marker, "$marker android:usesCleartextTraffic=""true"""), (New-Object System.Text.UTF8Encoding($false)))
     foreach ($version in @(@{ Code = 1; Name = '1.0'; Folder = 'v1' }, @{ Code = 2; Name = '1.1'; Folder = 'v2' })) {
-        dotnet build $project -c Release -f net10.0-android -p:RuntimeIdentifier=android-x64 --no-incremental "-p:ApplicationVersion=$($version.Code)" "-p:ApplicationDisplayVersion=$($version.Name)" -v:minimal
+        dotnet build $project -c Release -f net11.0-android -p:RuntimeIdentifier=android-x64 --no-incremental "-p:ApplicationVersion=$($version.Code)" "-p:ApplicationDisplayVersion=$($version.Name)" -v:minimal
         if ($LASTEXITCODE -ne 0) { throw "Build of $($version.Name) failed." }
         $folder = Join-Path $output $version.Folder
         New-Item -ItemType Directory -Force $folder | Out-Null

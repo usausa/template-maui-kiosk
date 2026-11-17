@@ -14,16 +14,16 @@
 
 ### 準備
 
-1. 署名した Release の版を作る → `Template.MobileApp\bin\Release\net10.0-android\android-x64\template.kioskapp-Signed.apk`
+1. 署名した Release の版を作る → `Template.MobileApp\bin\Release\net11.0-android\android-x64\template.kioskapp-Signed.apk`
 
    ```powershell
-   dotnet build Template.MobileApp/Template.MobileApp.csproj -c Release -f net10.0-android -p:RuntimeIdentifier=android-x64 --no-incremental
+   dotnet build Template.MobileApp/Template.MobileApp.csproj -c Release -f net11.0-android -p:RuntimeIdentifier=android-x64 --no-incremental
    ```
 
 2. 別の PowerShell で、APK を手元の HTTP で配る(Ctrl+C で止める)
 
    ```powershell
-   .\tools\emulator\serve.ps1 -Root Template.MobileApp\bin\Release\net10.0-android\android-x64
+   .\tools\emulator\serve.ps1 -Root Template.MobileApp\bin\Release\net11.0-android\android-x64
    ```
 
 3. QR の中身を作る → `__Emulator\provisioning.json` と `provisioning.png`

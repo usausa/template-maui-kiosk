@@ -459,7 +459,7 @@ public sealed class KioskAppStatesService : KeyedAppStatesService
 アカウントの無い端末(エミュレーターなど)に Debug のビルドを入れ、アプリをデバイスオーナーにする。
 
 ```
-dotnet build Template.MobileApp/Template.MobileApp.csproj -c Debug -f net10.0-android -t:Install
+dotnet build Template.MobileApp/Template.MobileApp.csproj -c Debug -f net11.0-android -t:Install
 ```
 
 ```
@@ -491,7 +491,7 @@ Release のビルドは `dpm remove-active-admin` で外せないので、設定
 起動しないアプリを配るとキオスクが止まるので、サーバーに置く前に試しの端末で起動を確かめる。
 
 ```
-dotnet build Template.MobileApp/Template.MobileApp.csproj -c Release -f net10.0-android --no-incremental -p:ApplicationVersion=2 -p:ApplicationDisplayVersion=1.1
+dotnet build Template.MobileApp/Template.MobileApp.csproj -c Release -f net11.0-android --no-incremental -p:ApplicationVersion=2 -p:ApplicationDisplayVersion=1.1
 ```
 
 ### デバイスオーナーを外す
