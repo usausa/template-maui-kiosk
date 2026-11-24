@@ -91,7 +91,7 @@
     <PackageReference Include="BunnyTail.MemberAccessor" Version="2.0.0" />
     <PackageReference Include="BunnyTail.XamlProperty.Maui" Version="2.0.0" />
     <PackageReference Include="CommunityToolkit.Maui" Version="17.0.0" />
-    <PackageReference Include="Components.Maui" Version="2.0.0" />
+    <PackageReference Include="Components.Maui" Version="2.1.0" />
     <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="11.0.0">
       <IncludeAssets Condition="'$(Configuration)' != 'Debug'">none</IncludeAssets>
       <PrivateAssets Condition="'$(Configuration)' != 'Debug'">all</PrivateAssets>
@@ -112,9 +112,9 @@
     <PackageReference Include="Usa.Smart.Maui" Version="3.1.0" />
     <PackageReference Include="Usa.Smart.Maui.Extensions" Version="3.1.0" />
     <PackageReference Include="Usa.Smart.Mvvm" Version="3.0.0" />
-    <PackageReference Include="Usa.Smart.Navigation" Version="3.21.0" />
-    <PackageReference Include="Usa.Smart.Navigation.Extensions.DependencyInjection" Version="3.21.0" />
-    <PackageReference Include="Usa.Smart.Navigation.Maui" Version="3.21.0" />
+    <PackageReference Include="Usa.Smart.Navigation" Version="3.22.0" />
+    <PackageReference Include="Usa.Smart.Navigation.Extensions.DependencyInjection" Version="3.22.0" />
+    <PackageReference Include="Usa.Smart.Navigation.Maui" Version="3.22.0" />
     <PackageReference Include="Usa.Smart.Reactive" Version="3.0.0" />
     <PackageReference Include="Usa.Smart.Results" Version="3.0.0" />
     <PackageReference Include="Xamarin.AndroidX.Enterprise.Feedback" Version="1.1.0.23" />
